@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// 各ユーザーは自分のデータ（users/{uid} 配下）にのみアクセスできる。
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if isOwner(uid);
+      allow delete: if false; // アカウント削除はサーバー(Admin)経由のみ
+
+      // サブコレクションは所有者のみ全操作可
+      match /goals/{goalId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /dailyTasks/{taskId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /reflections/{reflectionId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /conversations/{conversationId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+  }
+}
