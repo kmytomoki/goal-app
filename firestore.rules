@@ -1,6 +1,7 @@
 rules_version = '2';
 
 // 各ユーザーは自分のデータ（users/{uid} 配下）にのみアクセスできる。
+// AI 呼び出しは Cloud Functions（Admin SDK）経由なのでルールの対象外。
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -10,19 +11,18 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read, create, update: if isOwner(uid);
-      allow delete: if false; // アカウント削除はサーバー(Admin)経由のみ
+      allow delete: if false;
 
-      // サブコレクションは所有者のみ全操作可
+      match /idealSelf/{docId} {
+        allow read, write: if isOwner(uid);
+      }
       match /goals/{goalId} {
         allow read, write: if isOwner(uid);
       }
-      match /dailyTasks/{taskId} {
+      match /dailyLogs/{date} {
         allow read, write: if isOwner(uid);
       }
-      match /reflections/{reflectionId} {
-        allow read, write: if isOwner(uid);
-      }
-      match /conversations/{conversationId} {
+      match /weeklyReviews/{week} {
         allow read, write: if isOwner(uid);
       }
     }

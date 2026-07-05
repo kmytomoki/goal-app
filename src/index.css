@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/*
+ * ステージ（舞台）テーマ — 暗転した劇場とスポットライトの金。
+ * 「理想の自分を演じる」アプリの視覚言語。
+ */
+@theme {
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+  --font-display: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+
+  /* 夜の舞台（暖色寄りのダーク） */
+  --color-night-950: #0f0e0c;
+  --color-night-900: #1a1814;
+  --color-night-800: #242019;
+  --color-night-700: #35301f;
+
+  /* スポットライトの金 */
+  --color-gold-300: #e8c36a;
+  --color-gold-400: #d4a94c;
+  --color-gold-600: #a87e2f;
+
+  /* インク */
+  --color-ink-100: #f2ede3;
+  --color-ink-400: #a79e8c;
+  --color-ink-600: #6e675c;
+
+  /* チャート系列（ダーク面 #1a1814 で検証済み） */
+  --color-series-narikiri: #c98500;
+  --color-series-pace: #3987e5;
+  --color-series-motivation: #199e70;
+}
+
+html {
+  background: var(--color-night-950);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink-100);
+  background:
+    radial-gradient(ellipse 90% 40% at 50% -8%, rgba(212, 169, 76, 0.09), transparent 70%),
+    var(--color-night-950);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+
+/* シグネチャ: 「最初の一歩」スポットライトカード */
+.spotlight {
+  position: relative;
+  background:
+    radial-gradient(ellipse 120% 90% at 50% -30%, rgba(232, 195, 106, 0.16), transparent 65%),
+    var(--color-night-800);
+  border: 1px solid rgba(232, 195, 106, 0.28);
+}
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(232, 195, 106, 0.14), transparent 40%);
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask-composite: exclude;
+  padding: 1px;
+}
+
+.hairline {
+  border-color: rgba(232, 195, 106, 0.12);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold-400);
+  outline-offset: 2px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

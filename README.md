@@ -1,137 +1,92 @@
-# 理想の自分 — 目標管理アプリ (MVP)
+# ステージ — 理想の自分×AI対話 目標管理アプリ (MVP)
 
-AIとの対話を主軸に目標設定を完結させる目標管理アプリ。
-「ラベリング効果」を活用し、ユーザーを“理想の自分”として扱うことで、未来の自己像と日々の行動を接続する。
+「理想の自分をAIと毎日対話しながら演じていく」目標管理アプリ。
+夢はあるのに今日何をすべきか分からない学生向けに、理想像と今日の行動を繋げる。フォーム入力ゼロ、AIとの会話だけで完結する。
 
-## コンセプト / 目標の4層構造
+## 思想的基盤：意志力に頼らない仕組み化
 
-```
-5年後の理想像  →  3ヶ月目標  →  週次ゴール  →  毎日の行動
-(goals)          (goals)        (goals)        (dailyTasks)
-```
+1. **迷いの排除** — 前日の夜に「明日の最初の1タスク」を決めるので、朝は考えずに始まる
+2. **タスク量ベース管理** — 「2時間勉強」ではなく「例題3問」。完了条件が明確なチェックリスト
+3. **確実にやりきれる量** — AIが昨日の実績を見て計画過多を止める（見積もりの70%で組む）
+4. **最低ライン** — 「5分だけモード」「今日は休む（チェックインのみ）」でゼロの日を作らない
+5. **戻る仕組み** — 1日空いたら半分の量、3日空いたら今日の1タスクから。AIは絶対に責めない
+6. **プレイヤー/マネージャー分離** — 朝夜は実行に集中、計画の見直しは週次振り返りでだけ
 
 ## 技術スタック
 
-- フロントエンド: Next.js (App Router) + TypeScript + Tailwind CSS
-- バックエンド: Firebase (Firestore, Authentication)
-- AI: Anthropic API (Claude)
-- ホスティング想定: Vercel
-
-## AIモデルの方針（コスト最適化）
-
-| 用途 | モデル | max_tokens | 想定コスト目安 |
-| --- | --- | --- | --- |
-| 対話（オンボーディング/朝WOOP/夜振り返り） | `claude-sonnet-4-6` | 1024 | 1往復 ~$0.01–0.03 |
-| 分類（絶対やる/できたらやる） | `claude-haiku-4-5-20251001` | 512 | 1回 <$0.001 |
-| 70%調整（コスト優先） | `claude-haiku-4-5-20251001` | 768 | 1回 ~$0.001 |
-| 夜のスコア要約 | `claude-haiku-4-5-20251001` | 512 | 1回 ~$0.001 |
-
-- APIキーは環境変数で管理（ハードコード禁止）。AI呼び出しは全てサーバー側 (`src/app/api/*`)。
-- 単価はリリース時点で最新料金を再確認すること（`src/lib/ai/models.ts` にコスト注記）。
-
-## MVP機能
-
-1. **オンボーディング / 理想の自分設定** — AI対話 or フォームで5年後→3ヶ月目標を設定。AIスタイル（未来の自分 / コーチ）を選択。
-2. **朝のWOOPダイアログ** — Wish/Outcome/Obstacle/Plan の4ステップ。MVPは毎回フルWOOP。
-3. **1日の目標設定とバッファ調整** — 70%ルールをA案（明示）で適用。Haikuで「絶対やる/できたらやる」分類。**見積もり量とAI調整後の量を両方保存**。
-4. **夜の振り返り + 自動スコアリング** — 達成率を自動スコア化。**実績量も記録**（見積もりvs実績の比較用）。
-
-### 横断要件
-
-- 会話履歴を Firestore に保持し API 呼び出しの文脈として渡す。対話は中断・再開可能。
-- AI呼び出しは指数バックオフで最大3回リトライ。失敗時も入力内容を保持して再試行（最初からやり直させない）。
-- 応答はストリーミングで逐次表示。
-- ユーザーごとに TZ と「1日のリセット時刻」を持ち、論理日付を基準に朝/夜・スコア集計を行う。
-- Day1 / Day2以降 / 空状態を出し分け。
-
-## ディレクトリ構成
-
-```
-src/
-├── app/
-│   ├── (auth)/login, signup        # 認証画面（メール + Google）
-│   ├── onboarding/                 # 機能1
-│   ├── today/                      # 日常ホーム
-│   │   ├── morning/                # 機能2 + 機能3
-│   │   └── night/                  # 機能4
-│   ├── goals/                      # 目標レビュー
-│   ├── history/                    # スコア履歴
-│   ├── settings/                   # TZ/リセット時刻/AIスタイル
-│   ├── terms/                      # 利用規約
-│   ├── privacy/                    # プライバシーポリシー
-│   └── api/                        # chat(SSE) / classify / adjust / score
-├── components/                     # 共通UI（ChatWindow 等）
-├── hooks/useConversation.ts        # 対話の状態管理（永続化+ストリーミング+再開）
-├── lib/
-│   ├── ai/                         # models / prompts / client / retry / complete
-│   ├── api/                        # 認証付きクライアント / ルート認証
-│   ├── db/                         # Firestore CRUD（5コレクション）
-│   ├── firebase/                   # client / admin / paths
-│   └── time/dayBoundary.ts         # TZ + リセット時刻ロジック
-└── types/index.ts                  # データモデル型定義
-```
-
-## Firestore データモデル
-
-```
-users/{uid}                         # TZ, リセット時刻, AIスタイル, onboarding完了
-  goals/{goalId}                    # layer: vision_5y | goal_3m | weekly, parentId で階層
-  dailyTasks/{taskId}               # estimatedAmount / adjustedAmount / actualAmount / bufferHistory
-  reflections/{reflectionId}        # score, 達成率(調整後/見積もり), taskResults
-  conversations/{conversationId}    # type, status, messages[], currentStep, draft（中断/再開）
-```
-
-> daily 層は `dailyTasks` に一本化（`goals` は weekly まで）。`conversations.messages` は配列保持。
+- **フロントエンド**: React 19 (Vite) + TypeScript + Tailwind CSS v4。モバイルファーストSPA
+- **バックエンド**: Firebase — Authentication（匿名認証）/ Firestore / Cloud Functions v2
+- **AI**: Anthropic API（Cloud Functions 経由。クライアントから直接叩かない）
+  - 対話生成: `claude-sonnet-4-6`（オンボーディング・朝・夜・週次）— SSE ストリーミング
+  - 軽量タスク: `claude-haiku-4-5`（理想像/タスク抽出・スコア算出）— 構造化出力（JSON Schema）
+  - SDK の exponential backoff で最大3回リトライ
 
 ## セットアップ
 
-### 1. 依存インストール
-
 ```bash
+# 1. 依存インストール
 npm install
+npm install --prefix functions
+
+# 2. 環境変数
+cp .env.example .env.local              # Firebase クライアント設定（エミュレータなら不要）
+cp functions/.env.example functions/.env # ANTHROPIC_API_KEY を設定（必須）
+
+# 3. Functions をビルド
+npm run functions:build
+
+# 4. エミュレータ + 開発サーバー（ターミナル2つ）
+npm run emulators   # Firebase エミュレータ（auth/firestore/functions）
+npm run dev         # http://localhost:5173
 ```
 
-### 2. 環境変数
+- `VITE_USE_FIREBASE_EMULATOR=true`（デフォルト）でローカルの `demo-goal-app` プロジェクトで動作。課金不要。Anthropic キーだけ本物が必要。
+- 要件: Node 20+、Java 17+（Firestore エミュレータ用。firebase-tools@14 は Java 17 対応、@15 は Java 21 が必要）
+- WSL の `/mnt/c` 上ではモジュール読込が遅いため、`npm run emulators` は `FUNCTIONS_DISCOVERY_TIMEOUT=120` を設定済み
 
-`.env.example` をコピーして `.env.local` を作成し、値を設定する。
+## アーキテクチャ
 
-```bash
-cp .env.example .env.local
+```
+src/
+  lib/        firebase 初期化 / Firestore アクセサ / API クライアント / 日付ユーティリティ
+  components/ Chat（SSEストリーミング対話）/ TaskList / ScoreChart / PageHeader
+  pages/      Welcome → Onboarding → Home / Morning / Evening / Weekly / Settings
+functions/src/
+  index.ts    chat（onRequest, SSE）+ assist（onCall, 構造化出力）
+  prompts.ts  モード別システムプロンプト（ラベリング型 / 将来の自分型）
+  anthropic.ts モデル定義とクライアント
 ```
 
-- `ANTHROPIC_API_KEY` — Anthropic のAPIキー（サーバー側のみ）
-- `NEXT_PUBLIC_FIREBASE_*` — Firebase コンソール > プロジェクト設定 > 全般 のWebアプリ設定
-- `FIREBASE_ADMIN_*` — サービスアカウントJSON（Admin SDK 用）。`FIREBASE_ADMIN_PRIVATE_KEY` は改行を `\n` でエスケープして1行で貼り付け、ダブルクォートで囲む
+### Firestore データモデル
 
-### 3. Firebase 準備
-
-- Authentication で「メール/パスワード」と「Google」を有効化
-- Firestore を作成
-- ルールとインデックスをデプロイ:
-
-```bash
-firebase deploy --only firestore:rules,firestore:indexes
+```
+users/{uid}                     … createdAt, timezone, aiStyle, triggerHabit, minimalRule
+users/{uid}/idealSelf/main      … title, description, habits[]
+users/{uid}/dailyLogs/{yyyy-mm-dd}
+  morningDialogue / eveningDialogue: { messages[], completedAt, woopStage }
+  tasks: [{ text, done, isFirstTask }]
+  tomorrowFirstTask, scores: { narikiri, pace, motivation }
+  mode: normal | minimal | checkin_only
+  estimation: { planned, completed }   … 見積もり/実績の差分（表示せず保存のみ）
+users/{uid}/weeklyReviews/{yyyy-Www} … summary, stuckPatterns[], adjustments[]
 ```
 
-### 4. 開発サーバー起動
+### 主要フロー
 
-```bash
-npm run dev
-```
+- **オンボーディング**: AIスタイル選択 → 対話で理想像を言語化（3〜5往復）→ Haiku が理想像・習慣・開始条件・最低ラインを抽出して保存
+- **朝**: WOOP 段階拡張（Day1-7: WO / 8-30: WOO / 31-: WOOP）→ 対話の最後に Haiku がタスク抽出。前夜の「最初の1タスク」が必ず先頭
+- **夜**: 会話で振り返り → Haiku が3スコア算出＋「明日の最初の1タスク」を抽出（決まっていないと完了できない）
+- **週次**: 直近7日を Sonnet が観察（完了率・詰まりパターン・調整提案の3点のみ）
+- 朝夜の対話はメッセージごとに Firestore へ永続化（途中離脱しても再開できる）
 
-http://localhost:3000 を開く。
+## 本番デプロイの注意
 
-## v2 で予定（今回は実装せずデータのみ取得）
+- Cloud Functions から外部 API（Anthropic）を呼ぶため **Blaze プラン**が必要
+- API キーは `firebase functions:secrets:set ANTHROPIC_API_KEY` で Secret Manager 管理を推奨
+- Authentication で「匿名」プロバイダを有効化すること
+- `npm run build` の成果物（`dist/`）は Firebase Hosting / Vercel 等の静的ホスティングに配置
 
-- バッファ率の個人最適化（`dailyTasks.bufferHistory` と 見積もりvs実績データを活用）
-- WOOPの段階的導入
+## 旧実装について
 
-## 運用ドキュメント
-
-- 本番デプロイ手順: `docs/PRODUCTION.md`
-- ビジネス仮説/KPI: `docs/BUSINESS_MODEL.md`
-- 仕様書: `docs/SPEC.md`
-
-## 注意
-
-- UIは機能優先のシンプル実装（後でデザインを当てる前提）。
+Next.js 版の旧実装は git 履歴（`snapshot: legacy Next.js implementation` コミット）に保存されている。
+`docs/` 配下の企画資料（SPEC / BUSINESS_MODEL / PRODUCTION）は旧実装時代のもの。
