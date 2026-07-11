@@ -2,10 +2,13 @@ import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getAnthropic, MODEL_DIALOGUE, MODEL_LIGHT } from "./anthropic.js";
+import { defineSecret } from "firebase-functions/params";
+import { getGemini, MODEL_DIALOGUE, MODEL_LIGHT } from "./gemini.js";
 import { buildSystemPrompt, ChatContext, ChatMode } from "./prompts.js";
 
 initializeApp();
+
+const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -21,14 +24,14 @@ const CHAT_MODES: ChatMode[] = ["onboarding", "morning", "evening"];
  * レスポンス: `data: {"text": "..."}` の SSE。終端は `data: [DONE]`。
  */
 export const chat = onRequest(
-  { cors: true, timeoutSeconds: 300, memory: "256MiB" },
+  { cors: true, timeoutSeconds: 300, memory: "256MiB", secrets: [geminiApiKey] },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).json({ error: "method not allowed" });
       return;
     }
 
-    // 認証（クライアントから直接 Anthropic を叩かせないためのプロキシ）
+    // 認証（クライアントから直接 Gemini を叩かせないためのプロキシ）
     const authHeader = req.headers.authorization ?? "";
     const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
     if (!idToken) {
@@ -61,18 +64,21 @@ export const chat = onRequest(
     });
 
     try {
-      const stream = getAnthropic().messages.stream({
+      const stream = await getGemini().models.generateContentStream({
         model: MODEL_DIALOGUE,
-        max_tokens: 1024,
-        system,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        contents: messages.map((m) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }],
+        })),
+        config: { systemInstruction: system, maxOutputTokens: 1024 },
       });
 
-      stream.on("text", (text) => {
-        res.write(`data: ${JSON.stringify({ text })}\n\n`);
-      });
-
-      await stream.finalMessage();
+      for await (const chunk of stream) {
+        const text = chunk.text;
+        if (text) {
+          res.write(`data: ${JSON.stringify({ text })}\n\n`);
+        }
+      }
       res.write("data: [DONE]\n\n");
     } catch (err) {
       logger.error("chat stream failed", err);
@@ -85,7 +91,12 @@ export const chat = onRequest(
 
 // ---- 軽量タスク（Haiku / 構造化出力） ----
 
-type AssistTask = "extract_ideal_self" | "extract_tasks" | "score_evening" | "weekly_review";
+type AssistTask =
+  | "extract_ideal_self"
+  | "extract_tasks"
+  | "score_evening"
+  | "suggest_first_tasks"
+  | "weekly_review";
 
 interface AssistRequest {
   task: AssistTask;
@@ -99,18 +110,21 @@ async function runStructured(
   schema: Record<string, unknown>,
   maxTokens = 1024,
 ): Promise<unknown> {
-  const response = await getAnthropic().messages.create({
+  const response = await getGemini().models.generateContent({
     model,
-    max_tokens: maxTokens,
-    system,
-    messages: [{ role: "user", content: userContent }],
-    output_config: { format: { type: "json_schema", schema } },
+    contents: userContent,
+    config: {
+      systemInstruction: system,
+      maxOutputTokens: maxTokens,
+      responseMimeType: "application/json",
+      responseJsonSchema: schema,
+    },
   });
-  const block = response.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") {
+  const text = response.text;
+  if (!text) {
     throw new HttpsError("internal", "empty model response");
   }
-  return JSON.parse(block.text);
+  return JSON.parse(text);
 }
 
 function conversationText(messages: ChatMessage[]): string {
@@ -119,7 +133,7 @@ function conversationText(messages: ChatMessage[]): string {
     .join("\n");
 }
 
-export const assist = onCall({ cors: true, timeoutSeconds: 120 }, async (request) => {
+export const assist = onCall({ cors: true, timeoutSeconds: 120, secrets: [geminiApiKey] }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "sign in required");
   }
@@ -195,25 +209,77 @@ JSONのみを返す。`,
       const tasks = (payload.tasks ?? []) as { text: string; done: boolean }[];
       const habits = (payload.idealHabits ?? []) as string[];
       const done = tasks.filter((t) => t.done).length;
-      const rate = tasks.length ? done / tasks.length : 0;
-      return runStructured(
+      const pace = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+      const ai = (await runStructured(
         MODEL_LIGHT,
-        `夜の振り返り会話と実績から3つのスコア（0〜100の整数）を算出し、会話で決まった「明日の最初の1タスク」を抽出する。
+        `夜の振り返り会話と実績から「なりきり度」「モチベーション」を算出し、会話で決まった「明日の最初の1タスク」を抽出する。
 - narikiri（なりきり度）: 今日の行動が理想像の習慣（${habits.join(" / ") || "未設定"}）とどれだけ一致していたか。
-- pace（達成ペース）: タスク完了率ベース。今日は${tasks.length}タスク中${done}完了（${Math.round(rate * 100)}%）。完了率を基準に±10の範囲で調整。
-- motivation（モチベーション）: MVPではタスク達成度を主基準に、会話の前向きさで±10調整。
+- motivation（モチベーション）: タスク達成度を主基準に、会話の前向きさを加味する。
 - tomorrowFirstTask: 会話で決まった明日の最初の1タスク（量ベース・完了条件つき）。決まっていなければ空文字。
+- narikiriReason / motivationReason: それぞれの根拠を1文で書く。
 JSONのみを返す。`,
         conversationText(messages),
         {
           type: "object",
           properties: {
             narikiri: { type: "integer" },
-            pace: { type: "integer" },
             motivation: { type: "integer" },
             tomorrowFirstTask: { type: "string" },
+            narikiriReason: { type: "string" },
+            motivationReason: { type: "string" },
           },
-          required: ["narikiri", "pace", "motivation", "tomorrowFirstTask"],
+          required: [
+            "narikiri",
+            "motivation",
+            "tomorrowFirstTask",
+            "narikiriReason",
+            "motivationReason",
+          ],
+          additionalProperties: false,
+        },
+      )) as {
+        narikiri: number;
+        motivation: number;
+        tomorrowFirstTask: string;
+        narikiriReason: string;
+        motivationReason: string;
+      };
+      return {
+        narikiri: ai.narikiri,
+        pace,
+        motivation: ai.motivation,
+        tomorrowFirstTask: ai.tomorrowFirstTask,
+        narikiriReason: ai.narikiriReason,
+        paceReason: `${tasks.length}タスク中${done}完了（完了率${pace}%）`,
+        motivationReason: ai.motivationReason,
+      };
+    }
+
+    case "suggest_first_tasks": {
+      const tasks = (payload.tasks ?? []) as { text: string; done: boolean }[];
+      const habits = (payload.idealHabits ?? []) as string[];
+      const mood = (payload.mood as string) ?? "まあまあ";
+      const undone = tasks.filter((t) => !t.done).map((t) => t.text);
+      return runStructured(
+        MODEL_LIGHT,
+        `明日の最初の1タスク候補を3つ生成する。
+- 今日の未完了タスク（${undone.join(" / ") || "なし"}）と理想像の習慣（${habits.join(" / ") || "未設定"}）を優先して候補化する。
+- ユーザーの今日の状態メモ: ${mood}
+- 各候補は短く、量ベースで完了条件を明確にする（例:「英単語20個だけ」）。
+- 難しすぎる候補は禁止。明日の朝すぐ着手できる難易度にする。
+JSONのみを返す。`,
+        "候補を提案してください。",
+        {
+          type: "object",
+          properties: {
+            candidates: {
+              type: "array",
+              items: { type: "string" },
+              minItems: 3,
+              maxItems: 3,
+            },
+          },
+          required: ["candidates"],
           additionalProperties: false,
         },
       );

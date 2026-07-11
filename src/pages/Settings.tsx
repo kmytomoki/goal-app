@@ -1,23 +1,35 @@
 import { useState } from "react";
 import PageHeader from "../components/PageHeader";
-import { saveUserProfile } from "../lib/db";
+import { saveIdealSelf, saveUserProfile } from "../lib/db";
 import { useApp } from "../lib/useApp";
-import type { AiStyle } from "../lib/types";
 
 export default function Settings() {
   const { user, profile, ideal, refresh } = useApp();
-  const [aiStyle, setAiStyle] = useState<AiStyle>(profile?.aiStyle ?? "labeling");
   const [triggerHabit, setTriggerHabit] = useState(profile?.triggerHabit ?? "");
   const [minimalRule, setMinimalRule] = useState(profile?.minimalRule ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [idealTitle, setIdealTitle] = useState(ideal?.title ?? "");
+  const [idealDescription, setIdealDescription] = useState(ideal?.description ?? "");
+  const [idealHabitsText, setIdealHabitsText] = useState((ideal?.habits ?? []).join("\n"));
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
     setSaved(false);
     try {
-      await saveUserProfile(user.uid, { aiStyle, triggerHabit, minimalRule });
+      await saveUserProfile(user.uid, { aiStyle: "labeling", triggerHabit, minimalRule });
+      if (idealTitle.trim()) {
+        await saveIdealSelf(user.uid, {
+          title: idealTitle.trim(),
+          description: idealDescription.trim(),
+          habits: idealHabitsText
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(0, 6),
+        });
+      }
       await refresh();
       setSaved(true);
     } finally {
@@ -32,44 +44,33 @@ export default function Settings() {
       {ideal && (
         <section className="mt-4 rounded-2xl border hairline bg-night-900 p-5">
           <p className="font-display text-[11px] tracking-[0.25em] text-gold-300">あなたの理想像</p>
-          <p className="font-display mt-2 text-lg text-ink-100">{ideal.title}</p>
-          <p className="mt-1 text-sm leading-relaxed text-ink-400">{ideal.description}</p>
-          {ideal.habits.length > 0 && (
-            <ul className="mt-3 space-y-1 text-sm text-ink-400">
-              {ideal.habits.map((h, i) => (
-                <li key={i}>・{h}</li>
-              ))}
-            </ul>
-          )}
+          <input
+            value={idealTitle}
+            onChange={(e) => setIdealTitle(e.target.value)}
+            placeholder="理想像タイトル"
+            className="mt-2 w-full rounded-xl border hairline bg-night-800 px-3 py-2 text-sm text-ink-100"
+          />
+          <textarea
+            value={idealDescription}
+            onChange={(e) => setIdealDescription(e.target.value)}
+            placeholder="理想像の説明"
+            rows={2}
+            className="mt-2 w-full rounded-xl border hairline bg-night-800 px-3 py-2 text-sm text-ink-100"
+          />
+          <textarea
+            value={idealHabitsText}
+            onChange={(e) => setIdealHabitsText(e.target.value)}
+            placeholder={"習慣（1行に1つ）"}
+            rows={4}
+            className="mt-2 w-full rounded-xl border hairline bg-night-800 px-3 py-2 text-sm text-ink-100"
+          />
         </section>
       )}
 
       <section className="mt-6 space-y-5">
-        <div>
-          <p className="px-1 pb-2 text-sm text-ink-400">AIの話し方</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setAiStyle("labeling")}
-              className={`rounded-xl border px-3 py-3 text-sm ${
-                aiStyle === "labeling"
-                  ? "border-gold-400/60 bg-gold-400/10 text-gold-300"
-                  : "hairline bg-night-900 text-ink-400"
-              }`}
-            >
-              コーチと話す
-            </button>
-            <button
-              onClick={() => setAiStyle("futureself")}
-              className={`rounded-xl border px-3 py-3 text-sm ${
-                aiStyle === "futureself"
-                  ? "border-gold-400/60 bg-gold-400/10 text-gold-300"
-                  : "hairline bg-night-900 text-ink-400"
-              }`}
-            >
-              未来の自分と話す
-            </button>
-          </div>
-        </div>
+        <p className="rounded-xl border hairline bg-night-900 px-4 py-3 text-sm text-ink-400">
+          AIの話し方は現在「コーチ型」に固定しています。
+        </p>
 
         <label className="block">
           <span className="block px-1 pb-2 text-sm text-ink-400">

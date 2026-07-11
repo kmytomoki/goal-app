@@ -10,7 +10,7 @@
     "serve": "npm run build && firebase emulators:start --only functions --project demo-goal-app"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.107.0",
+    "@google/genai": "^2.11.0",
     "firebase-admin": "^13.0.0",
     "firebase-functions": "^6.1.0"
   },

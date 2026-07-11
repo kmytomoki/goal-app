@@ -3,9 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import ScoreChart, { type DayScore } from "../components/ScoreChart";
 import TaskList from "../components/TaskList";
 import { emptyDailyLog, getDailyLog, getLastLogBefore, getRecentLogs, saveDailyLog } from "../lib/db";
-import { addDays, dayCountSince, localDateKey } from "../lib/dates";
+import { addDays, dayCountSince, localDateKey, woopStageForDay } from "../lib/dates";
 import { useApp } from "../lib/useApp";
-import type { DailyLog } from "../lib/types";
+import type { DailyLog, Task } from "../lib/types";
 
 export default function Home() {
   const { user, profile, ideal } = useApp();
@@ -15,6 +15,9 @@ export default function Home() {
   const [log, setLog] = useState<DailyLog | null>(null);
   const [recent, setRecent] = useState<DailyLog[]>([]);
   const [prevFirstTask, setPrevFirstTask] = useState<string | null>(null);
+  const [prevUndoneTasks, setPrevUndoneTasks] = useState<string[]>([]);
+  const [quickStarting, setQuickStarting] = useState(false);
+  const [openReason, setOpenReason] = useState<"narikiri" | "pace" | "motivation" | null>(null);
   const [loading, setLoading] = useState(true);
 
   const uid = user?.uid;
@@ -31,6 +34,7 @@ export default function Home() {
       setLog(todayLog);
       setRecent(logs);
       setPrevFirstTask(lastLog?.tomorrowFirstTask ?? null);
+      setPrevUndoneTasks((lastLog?.tasks ?? []).filter((t) => !t.done).map((t) => t.text));
     } finally {
       setLoading(false);
     }
@@ -52,6 +56,47 @@ export default function Home() {
   const morningDone = log?.morningDialogue?.completedAt != null;
   const eveningDone = log?.eveningDialogue?.completedAt != null;
   const isRestDay = log?.mode === "checkin_only";
+
+  const quickStartToday = async () => {
+    if (!uid || quickStarting) return;
+    setQuickStarting(true);
+    try {
+      const base = log ?? emptyDailyLog(today);
+      const candidates: string[] = [];
+      const addUnique = (text: string) => {
+        const normalized = text.trim();
+        if (!normalized) return;
+        if (candidates.some((c) => c.toLowerCase() === normalized.toLowerCase())) return;
+        candidates.push(normalized);
+      };
+      addUnique(prevFirstTask ?? "");
+      const carryLimit = Math.max(1, Math.min(2, Math.ceil(prevUndoneTasks.length / 2)));
+      prevUndoneTasks.slice(0, carryLimit).forEach(addUnique);
+      if (candidates.length === 0) {
+        addUnique(ideal?.habits?.[0] ? `${ideal.habits[0]}を5分だけ` : "今日やる最初の1タスクを5分だけ");
+      }
+
+      const tasks: Task[] = candidates.map((text, index) => ({
+        text,
+        done: false,
+        isFirstTask: index === 0,
+      }));
+      await saveDailyLog(uid, today, {
+        ...base,
+        mode: "normal",
+        tasks,
+        morningDialogue: {
+          messages: [{ role: "assistant", content: "クイックスタートでタスクを作成しました。" }],
+          completedAt: Date.now(),
+          woopStage: woopStageForDay(dayCount),
+        },
+        estimation: { planned: tasks.length, completed: 0 },
+      });
+      await load();
+    } finally {
+      setQuickStarting(false);
+    }
+  };
 
   const toggleTask = async (index: number) => {
     if (!uid || !log) return;
@@ -140,10 +185,17 @@ export default function Home() {
                 </p>
               )}
               <button
-                onClick={() => navigate("/morning")}
+                onClick={quickStartToday}
                 className="mt-4 w-full rounded-xl bg-gold-400 py-3 font-bold text-night-950"
+                disabled={quickStarting}
               >
-                朝の対話をはじめる
+                {quickStarting ? "タスクを準備中…" : "タップで開始"}
+              </button>
+              <button
+                onClick={() => navigate("/morning")}
+                className="mt-2 w-full rounded-xl border border-gold-400/40 bg-night-800 py-3 font-medium text-gold-300"
+              >
+                AIと話して決める
               </button>
               <div className="mt-3 flex gap-2">
                 <button
@@ -207,15 +259,43 @@ export default function Home() {
                   ["やる気", log.scores.motivation, "var(--color-series-motivation)"],
                 ] as const
               ).map(([label, value, color]) => (
-                <div key={label} className="rounded-xl bg-night-800 py-2.5">
+                <button
+                  key={label}
+                  onClick={() =>
+                    setOpenReason((current) =>
+                      current ===
+                      (label === "なりきり"
+                        ? "narikiri"
+                        : label === "ペース"
+                          ? "pace"
+                          : "motivation")
+                        ? null
+                        : label === "なりきり"
+                          ? "narikiri"
+                          : label === "ペース"
+                            ? "pace"
+                            : "motivation",
+                    )
+                  }
+                  className="rounded-xl bg-night-800 py-2.5 text-center"
+                >
                   <p className="text-[22px] font-bold text-ink-100">{value}</p>
                   <p className="mt-0.5 flex items-center justify-center gap-1 text-[11px] text-ink-400">
                     <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
                     {label}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
+          )}
+          {log?.scores && openReason && (
+            <p className="mb-4 rounded-xl border hairline bg-night-800 px-3 py-2 text-xs leading-relaxed text-ink-300">
+              {openReason === "narikiri"
+                ? log.scores.narikiriReason ?? "今日の行動と理想像の一致度から算出。"
+                : openReason === "pace"
+                  ? log.scores.paceReason ?? "タスク完了率から算出。"
+                  : log.scores.motivationReason ?? "達成状況と会話内容から算出。"}
+            </p>
           )}
           <ScoreChart days={days} />
         </div>

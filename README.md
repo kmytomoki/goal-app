@@ -16,10 +16,9 @@
 
 - **フロントエンド**: React 19 (Vite) + TypeScript + Tailwind CSS v4。モバイルファーストSPA
 - **バックエンド**: Firebase — Authentication（匿名認証）/ Firestore / Cloud Functions v2
-- **AI**: Anthropic API（Cloud Functions 経由。クライアントから直接叩かない）
-  - 対話生成: `claude-sonnet-4-6`（オンボーディング・朝・夜・週次）— SSE ストリーミング
-  - 軽量タスク: `claude-haiku-4-5`（理想像/タスク抽出・スコア算出）— 構造化出力（JSON Schema）
-  - SDK の exponential backoff で最大3回リトライ
+- **AI**: Gemini API（Cloud Functions 経由。クライアントから直接叩かない）
+  - 対話生成: `gemini-2.5-flash`（オンボーディング・朝・夜・週次）— SSE ストリーミング
+  - 軽量タスク: `gemini-2.5-flash-lite`（理想像/タスク抽出・スコア算出）— 構造化出力（JSON Schema）
 
 ## セットアップ
 
@@ -30,7 +29,7 @@ npm install --prefix functions
 
 # 2. 環境変数
 cp .env.example .env.local              # Firebase クライアント設定（エミュレータなら不要）
-cp functions/.env.example functions/.env # ANTHROPIC_API_KEY を設定（必須）
+cp functions/.env.example functions/.env # GEMINI_API_KEY を設定（必須）
 
 # 3. Functions をビルド
 npm run functions:build
@@ -40,7 +39,9 @@ npm run emulators   # Firebase エミュレータ（auth/firestore/functions）
 npm run dev         # http://localhost:5173
 ```
 
-- `VITE_USE_FIREBASE_EMULATOR=true`（デフォルト）でローカルの `demo-goal-app` プロジェクトで動作。課金不要。Anthropic キーだけ本物が必要。
+日常の起動・停止手順やトラブル対処は [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md) を参照。
+
+- `VITE_USE_FIREBASE_EMULATOR=true`（デフォルト）でローカルの `demo-goal-app` プロジェクトで動作。課金不要。Gemini キーだけ本物が必要。
 - 要件: Node 20+、Java 17+（Firestore エミュレータ用。firebase-tools@14 は Java 17 対応、@15 は Java 21 が必要）
 - WSL の `/mnt/c` 上ではモジュール読込が遅いため、`npm run emulators` は `FUNCTIONS_DISCOVERY_TIMEOUT=120` を設定済み
 
@@ -79,12 +80,15 @@ users/{uid}/weeklyReviews/{yyyy-Www} … summary, stuckPatterns[], adjustments[]
 - **週次**: 直近7日を Sonnet が観察（完了率・詰まりパターン・調整提案の3点のみ）
 - 朝夜の対話はメッセージごとに Firestore へ永続化（途中離脱しても再開できる）
 
-## 本番デプロイの注意
+## 本番デプロイ（Vercel + Firebase）
 
-- Cloud Functions から外部 API（Anthropic）を呼ぶため **Blaze プラン**が必要
-- API キーは `firebase functions:secrets:set ANTHROPIC_API_KEY` で Secret Manager 管理を推奨
-- Authentication で「匿名」プロバイダを有効化すること
-- `npm run build` の成果物（`dist/`）は Firebase Hosting / Vercel 等の静的ホスティングに配置
+- **フロント**: Vercel（`dist/`、`vercel.json` で SPA ルーティング）
+- **バックエンド**: Firebase 本番（Auth / Firestore / Cloud Functions）
+- Cloud Functions から Gemini を呼ぶため Firebase **Blaze プラン**が必要
+- Vercel では `VITE_USE_FIREBASE_EMULATOR=false` と `VITE_FIREBASE_*` を設定
+- Authentication で「**匿名**」プロバイダを有効化し、Vercel のドメインを承認ドメインに追加
+
+手順の詳細: [docs/VERCEL_DEPLOY.md](docs/VERCEL_DEPLOY.md)
 
 ## 旧実装について
 

@@ -2,7 +2,7 @@
 // 思想: 意志力に頼らない仕組み化。迷いの排除・量ベース管理・確実にやりきれる量・
 // 最低ライン・戻る仕組み・プレイヤー/マネージャー分離を全プロンプトに貫く。
 
-export type AiStyle = "labeling" | "futureself";
+export type AiStyle = "labeling";
 export type ChatMode = "onboarding" | "morning" | "evening";
 export type WoopStage = "wo" | "woo" | "woop";
 
@@ -26,6 +26,12 @@ export interface ChatContext {
   } | null;
   tomorrowFirstTask?: string | null;
   todayTasks?: { text: string; done: boolean; isFirstTask?: boolean }[];
+  recentDays?: {
+    date: string;
+    doneTasks: string[];
+    undoneTasks: string[];
+    note?: string | null;
+  }[];
 }
 
 const COMMON_RULES = `
@@ -34,13 +40,12 @@ const COMMON_RULES = `
 - 応答は3文以内。長い説教をしない。
 - ユーザーを絶対に責めない。「できなかった」は性格ではなく条件（タスクの大きさ・タイミング）の問題として扱う。
 - タスクに言及するときは必ず量ベースで完了条件を明確にする（「数学をやる」ではなく「二次関数の例題3問」。数・ページ・問題番号）。
-- 日本語で話す。絵文字は使わない。`;
+- 「〜のあなたなら」のようなラベリング表現は1会話につき最大1回。同じ言い回しを繰り返さない。
+- 日本語で話す。絵文字は使わない。
+- 応答の末尾に、タップで返しやすい短い選択肢を可能な限り付ける。形式は厳密に [choices: 選択肢1|選択肢2|選択肢3]。自由回答が自然な質問では省略可。`;
 
 function styleClause(ctx: ChatContext): string {
   const title = ctx.idealSelf?.title ?? "理想の自分";
-  if (ctx.aiStyle === "futureself") {
-    return `あなたは5年後の本人、つまり「${title}」になったユーザー自身として一人称で話す。過去の自分（今のユーザー）に語りかける口調で、落ち着いて、確信を持って話す。`;
-  }
   return `あなたはラベリング型のコーチ。ユーザーを「すでに${title}である人」として扱い、期待をかける二人称で話しかける（例:「将来の${title}のあなたなら、今日何をするかはもう分かっていますよね」）。心理学のラベリング効果に基づき、理想像を前提にした問いかけをする。`;
 }
 
@@ -56,6 +61,21 @@ function idealSelfClause(ctx: ChatContext): string {
 - ${habits}`;
 }
 
+function recentDaysClause(ctx: ChatContext): string {
+  if (!ctx.recentDays?.length) return "";
+  const rows = ctx.recentDays
+    .map((d) => {
+      const done = d.doneTasks.length ? d.doneTasks.join(" / ") : "なし";
+      const undone = d.undoneTasks.length ? d.undoneTasks.join(" / ") : "なし";
+      const note = d.note?.trim() ? ` / 夜の一言: ${d.note.trim()}` : "";
+      return `- ${d.date}: 完了=${done} / 未完了=${undone}${note}`;
+    })
+    .join("\n");
+  return `
+## 直近の実績
+${rows}`;
+}
+
 function onboardingPrompt(ctx: ChatContext): string {
   return `あなたは「理想の自分を毎日演じる」目標管理アプリのオンボーディング担当AI。
 ${styleClause(ctx)}
@@ -69,7 +89,7 @@ ${COMMON_RULES}
 4. 最低ラインの合意: 「どうしても忙しい日・体調が悪い日の最低ラインを決めましょう。5分だけでもOKにしますか？」
 
 ## 進め方
-- 最初の質問は「5年後、どんな自分になっていたいですか？」から始める。
+- 最初の質問は「最近ちょっと『いいな』と思う人や姿はありますか？」から始める。
 - 抽象的な答えには「たとえば平日の夜、その人は何をしていそうですか？」のように場面を聞いて具体化する。
 - 4つすべて確認できたら、理想像・習慣・開始条件・最低ラインを3文以内で要約し、最後に必ず「準備ができました。下の『設定を完了する』ボタンを押してください。」と伝える。`;
 }
@@ -114,6 +134,7 @@ Obstacleまで聞いたら「その邪魔が来たら、どうする？」とif-
 ${styleClause(ctx)}
 ${COMMON_RULES}
 ${idealSelfClause(ctx)}
+${recentDaysClause(ctx)}
 
 ## 今日の状態
 - 継続 Day ${ctx.dayCount ?? 1}
@@ -121,6 +142,9 @@ ${idealSelfClause(ctx)}
 - ${yesterdayClause}
 ${gapClause ? `- ${gapClause}` : ""}
 ${minimalClause ? `- ${minimalClause}` : ""}
+
+## 応答品質
+- 会話の最初の応答では、可能なら直近実績や昨日データから具体的な事実を1つ引用してから質問する。一般論だけで始めない。
 
 ## 進め方
 ${stageRules[stage]}
@@ -141,11 +165,13 @@ function eveningPrompt(ctx: ChatContext): string {
 ${styleClause(ctx)}
 ${COMMON_RULES}
 ${idealSelfClause(ctx)}
+${recentDaysClause(ctx)}
 
 ## 今朝決めたタスクリスト
 ${tasks || "（今日はタスクリストなし）"}
 
 ## 進め方（順番に、1問ずつ）
+- 会話の最初の応答では、可能なら今日のタスクや直近実績から具体的な事実を1つ引用してから質問する。一般論だけで始めない。
 1. 今日どうだったかを一言で聞く。
 2. できたことがあれば、ラベリングで褒める（例:「さすが、${ctx.idealSelf?.title ?? "理想の自分"}らしい行動でした」）。
 3. 自己否定的な発言（「全然できなかった」「自分はダメ」など）を検出したら、原因の分解に誘導する:「どのタスクで止まりましたか？」「何が邪魔でしたか？」。責める言葉は条件の問題に言い換える（「意志が弱い」→「タスクが大きすぎたかもしれません」）。

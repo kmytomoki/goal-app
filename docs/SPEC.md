@@ -373,7 +373,7 @@ goal-app/
 
 | 変数 | 用途 | 公開 |
 | --- | --- | --- |
-| ANTHROPIC_API_KEY | AI（サーバー側のみ） | ✗ 秘密 |
+| GEMINI_API_KEY | AI（サーバー側のみ） | ✗ 秘密 |
 | NEXT_PUBLIC_FIREBASE_* | Firebase Web設定 | ○ 公開可 |
 | FIREBASE_ADMIN_PROJECT_ID / CLIENT_EMAIL / PRIVATE_KEY | Admin SDK | ✗ 秘密 |
 | NEXT_PUBLIC_USE_FIREBASE_EMULATOR | エミュレータ利用フラグ | ○ |
@@ -397,7 +397,7 @@ goal-app/
    NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true
    FIRESTORE_EMULATOR_HOST=127.0.0.1:8088
    FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099
-   ANTHROPIC_API_KEY=<実キー>
+   GEMINI_API_KEY=<実キー>
    ```
 2. ターミナル①: `npm run emulators`（Auth:9099 / Firestore:8088 / UI:4000。demo-goal-app でオフライン起動）
 3. ターミナル②: `npm run dev`
@@ -450,7 +450,7 @@ goal-app/
 ## 15. 既知の課題 / 注意点
 
 - **エミュレータは `127.0.0.1:3000` でアクセス必須**（localhost だと Google ポップアップが失敗）。
-- **Windows のユーザー環境変数 `ANTHROPIC_API_KEY` が `.env.local` を上書きする**（Next.js は既存の process 環境変数を優先）。この環境には古い無効キーが設定されており、AI呼び出しが 401 になる。対処: ユーザー環境変数を削除/更新するか、`$env:ANTHROPIC_API_KEY = <有効キー>` を設定したシェルで `npm run dev` を起動する。
+- **Windows のユーザー環境変数 `GEMINI_API_KEY` が `.env.local` を上書きしうる**（既存の process 環境変数が優先される）。AI呼び出しが 401 になる場合はユーザー環境変数を確認する。
 - エミュレータデータは揮発。永続化するなら `emulators:start --import/--export-on-exit` を追加。
 - 対話の最初のあいさつは固定文（コスト削減）。AI生成にしたい場合は要変更。
 - goals の編集UIは未実装（オンボ時の作成のみ）。

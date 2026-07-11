@@ -1,4 +1,4 @@
-export type AiStyle = "labeling" | "futureself";
+export type AiStyle = "labeling";
 export type WoopStage = "wo" | "woo" | "woop";
 export type DayMode = "normal" | "minimal" | "checkin_only";
 export type ChatMode = "onboarding" | "morning" | "evening";
@@ -35,6 +35,9 @@ export interface Scores {
   narikiri: number; // なりきり度 0-100
   pace: number; // 達成ペース 0-100
   motivation: number; // モチベーション 0-100
+  narikiriReason?: string;
+  paceReason?: string;
+  motivationReason?: string;
 }
 
 export interface Dialogue {
@@ -51,8 +54,16 @@ export interface DailyLog {
   tomorrowFirstTask: string | null; // 夜に決めた「明日の最初の1タスク」
   scores: Scores | null;
   mode: DayMode;
+  eveningNote?: string | null;
   // 見積もりと実績の差分（将来のバッファ最適化用。MVPでは保存のみ）
   estimation?: { planned: number; completed: number } | null;
+}
+
+export interface RecentDayContext {
+  date: string;
+  doneTasks: string[];
+  undoneTasks: string[];
+  note?: string | null;
 }
 
 export interface WeeklyReview {
@@ -76,4 +87,5 @@ export interface ChatContext {
   yesterday?: { taskCount: number; doneCount: number; completionRate: number } | null;
   tomorrowFirstTask?: string | null;
   todayTasks?: Task[];
+  recentDays?: RecentDayContext[];
 }

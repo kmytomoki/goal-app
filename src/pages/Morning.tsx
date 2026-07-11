@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Chat, { START_MARKER } from "../components/Chat";
 import PageHeader from "../components/PageHeader";
 import { extractTasks } from "../lib/api";
-import { emptyDailyLog, getDailyLog, getLastLogBefore, saveDailyLog } from "../lib/db";
+import { emptyDailyLog, getDailyLog, getLastLogBefore, getRecentLogs, saveDailyLog } from "../lib/db";
 import { dayCountSince, diffDays, localDateKey, woopStageForDay } from "../lib/dates";
 import { useApp } from "../lib/useApp";
 import type { ChatContext, ChatMessage, DailyLog, Task } from "../lib/types";
@@ -27,10 +27,12 @@ export default function Morning() {
   useEffect(() => {
     if (!uid || !profile) return;
     void (async () => {
-      const [todayLog, lastLog] = await Promise.all([
+      const [todayLog, lastLog, recentRaw] = await Promise.all([
         getDailyLog(uid, today),
         getLastLogBefore(uid, today),
+        getRecentLogs(uid, 4),
       ]);
+      const recentLogs = recentRaw.filter((entry) => entry.date < today).slice(0, 3);
       const base = todayLog ?? emptyDailyLog(today);
       logRef.current = base;
       setLog(base);
@@ -47,7 +49,7 @@ export default function Morning() {
           : null;
 
       setContext({
-        aiStyle: profile.aiStyle,
+        aiStyle: "labeling",
         idealSelf: ideal
           ? { title: ideal.title, description: ideal.description, habits: ideal.habits }
           : null,
@@ -59,6 +61,12 @@ export default function Morning() {
         mode: base.mode,
         yesterday,
         tomorrowFirstTask: lastLog?.tomorrowFirstTask ?? null,
+        recentDays: recentLogs.map((entry) => ({
+          date: entry.date,
+          doneTasks: entry.tasks.filter((t) => t.done).map((t) => t.text),
+          undoneTasks: entry.tasks.filter((t) => !t.done).map((t) => t.text),
+          note: entry.eveningNote ?? null,
+        })),
       });
       setLoading(false);
     })();

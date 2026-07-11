@@ -6,6 +6,27 @@ import type { ChatContext, ChatMessage, ChatMode } from "../lib/types";
 // （APIの先頭メッセージは user である必要があるため）
 export const START_MARKER = "（対話を開始してください）";
 
+function parseChoices(content: string): { cleaned: string; choices: string[] } {
+  const lines = content.split("\n");
+  const choices: string[] = [];
+  const kept: string[] = [];
+  const seen = new Set<string>();
+  for (const line of lines) {
+    const match = line.trim().match(/^\[choices:\s*(.+)\]$/i);
+    if (!match) {
+      kept.push(line);
+      continue;
+    }
+    for (const raw of match[1].split("|")) {
+      const item = raw.trim();
+      if (!item || seen.has(item)) continue;
+      seen.add(item);
+      choices.push(item);
+    }
+  }
+  return { cleaned: kept.join("\n").trim(), choices };
+}
+
 interface ChatProps {
   mode: ChatMode;
   context: ChatContext;
@@ -33,6 +54,8 @@ export default function Chat({
   const startedRef = useRef(false);
 
   const visible = messages.filter((m) => m.content !== START_MARKER);
+  const lastAssistant = [...visible].reverse().find((m) => m.role === "assistant");
+  const quickChoices = lastAssistant ? parseChoices(lastAssistant.content).choices : [];
 
   const run = useCallback(
     async (history: ChatMessage[]) => {
@@ -81,6 +104,13 @@ export default function Chat({
     void run(history);
   };
 
+  const sendQuickChoice = (text: string) => {
+    if (streaming || disabled) return;
+    const history: ChatMessage[] = [...messages, { role: "user", content: text }];
+    onMessagesChange(history);
+    void run(history);
+  };
+
   const retry = () => {
     if (messages.length > 0) void run(messages);
   };
@@ -88,8 +118,11 @@ export default function Chat({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex-1 space-y-3 overflow-y-auto px-1 py-4">
-        {visible.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+        {visible.map((m, i) => {
+          const parsed =
+            m.role === "assistant" ? parseChoices(m.content) : { cleaned: m.content, choices: [] };
+          return (
+            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={
                 m.role === "user"
@@ -97,10 +130,11 @@ export default function Chat({
                   : "max-w-[85%] rounded-2xl rounded-bl-sm bg-night-800 px-4 py-2.5 text-[15px] leading-relaxed text-ink-100 whitespace-pre-wrap"
               }
             >
-              {m.content}
+              {parsed.cleaned || "…"}
             </div>
           </div>
-        ))}
+          );
+        })}
         {streaming && (
           <div className="flex justify-start">
             <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-night-800 px-4 py-2.5 text-[15px] leading-relaxed text-ink-100 whitespace-pre-wrap">
@@ -120,6 +154,19 @@ export default function Chat({
       </div>
 
       <div className="sticky bottom-0 border-t hairline bg-night-950/90 px-1 py-3 backdrop-blur">
+        {quickChoices.length > 0 && !streaming && !disabled && (
+          <div className="mb-2 flex flex-wrap gap-2 px-1">
+            {quickChoices.map((choice) => (
+              <button
+                key={choice}
+                onClick={() => sendQuickChoice(choice)}
+                className="rounded-full border border-gold-400/35 bg-gold-400/10 px-3 py-1 text-xs text-gold-300"
+              >
+                {choice}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             value={input}

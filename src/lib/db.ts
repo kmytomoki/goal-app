@@ -46,6 +46,7 @@ export function emptyDailyLog(date: string): DailyLog {
     tomorrowFirstTask: null,
     scores: null,
     mode: "normal",
+    eveningNote: null,
     estimation: null,
   };
 }

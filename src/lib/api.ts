@@ -101,6 +101,9 @@ export interface EveningScoreResult {
   pace: number;
   motivation: number;
   tomorrowFirstTask: string;
+  narikiriReason: string;
+  paceReason: string;
+  motivationReason: string;
 }
 
 export function scoreEvening(params: {
@@ -109,6 +112,18 @@ export function scoreEvening(params: {
   idealHabits: string[];
 }): Promise<EveningScoreResult> {
   return assist("score_evening", params);
+}
+
+export interface FirstTaskSuggestionResult {
+  candidates: string[];
+}
+
+export function suggestFirstTasks(params: {
+  tasks: Task[];
+  idealHabits: string[];
+  mood: string;
+}): Promise<FirstTaskSuggestionResult> {
+  return assist("suggest_first_tasks", params);
 }
 
 export interface WeeklyReviewResult {

@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Chat, { START_MARKER } from "../components/Chat";
 import PageHeader from "../components/PageHeader";
 import TaskList from "../components/TaskList";
-import { scoreEvening } from "../lib/api";
-import { emptyDailyLog, getDailyLog, saveDailyLog } from "../lib/db";
+import { scoreEvening, suggestFirstTasks } from "../lib/api";
+import { emptyDailyLog, getDailyLog, getRecentLogs, saveDailyLog } from "../lib/db";
 import { localDateKey } from "../lib/dates";
 import { useApp } from "../lib/useApp";
 import type { ChatContext, ChatMessage, DailyLog } from "../lib/types";
@@ -19,14 +19,20 @@ export default function Evening() {
   const [loading, setLoading] = useState(true);
   const [finishing, setFinishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [quickMood, setQuickMood] = useState<string>("まあまあ");
+  const [quickCandidates, setQuickCandidates] = useState<string[]>([]);
+  const [quickFirstTask, setQuickFirstTask] = useState("");
+  const [loadingQuick, setLoadingQuick] = useState(false);
   const logRef = useRef<DailyLog | null>(null);
+  const recentRef = useRef<DailyLog[]>([]);
 
   useEffect(() => {
     if (!uid) return;
     void (async () => {
-      const todayLog = (await getDailyLog(uid, today)) ?? emptyDailyLog(today);
+      const [todayLog, recentLogs] = await Promise.all([getDailyLog(uid, today), getRecentLogs(uid, 4)]);
       logRef.current = todayLog;
-      setLog(todayLog);
+      setLog(todayLog ?? emptyDailyLog(today));
+      recentRef.current = recentLogs.filter((entry) => entry.date < today).slice(0, 3);
       setLoading(false);
     })();
   }, [uid, today]);
@@ -34,15 +40,44 @@ export default function Evening() {
   const context: ChatContext | null = useMemo(() => {
     if (!profile || !log) return null;
     return {
-      aiStyle: profile.aiStyle,
+      aiStyle: "labeling",
       idealSelf: ideal
         ? { title: ideal.title, description: ideal.description, habits: ideal.habits }
         : null,
       minimalRule: profile.minimalRule,
       mode: log.mode,
       todayTasks: log.tasks,
+      recentDays: recentRef.current.map((entry) => ({
+        date: entry.date,
+        doneTasks: entry.tasks.filter((t) => t.done).map((t) => t.text),
+        undoneTasks: entry.tasks.filter((t) => !t.done).map((t) => t.text),
+        note: entry.eveningNote ?? null,
+      })),
     };
   }, [profile, ideal, log]);
+
+  const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
+
+  const loadQuickCandidates = async (mood: string) => {
+    if (!log || loadingQuick) return;
+    setLoadingQuick(true);
+    try {
+      const result = await suggestFirstTasks({
+        tasks: log.tasks,
+        idealHabits: ideal?.habits ?? [],
+        mood,
+      });
+      const candidates = result.candidates.filter((text) => text.trim()).slice(0, 3);
+      setQuickCandidates(candidates);
+      if (!quickFirstTask.trim() && candidates[0]) {
+        setQuickFirstTask(candidates[0]);
+      }
+    } catch {
+      setNotice("明日の一歩候補の生成に失敗しました。少し待って再試行してください。");
+    } finally {
+      setLoadingQuick(false);
+    }
+  };
 
   const toggleTask = async (index: number) => {
     if (!uid || !log) return;
@@ -94,15 +129,18 @@ export default function Evening() {
         setFinishing(false);
         return;
       }
-      const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
       await saveDailyLog(uid, today, {
         scores: {
           narikiri: clamp(result.narikiri),
           pace: clamp(result.pace),
           motivation: clamp(result.motivation),
+          narikiriReason: result.narikiriReason,
+          paceReason: result.paceReason,
+          motivationReason: result.motivationReason,
         },
         tomorrowFirstTask: result.tomorrowFirstTask.trim(),
         eveningDialogue: { ...log.eveningDialogue, completedAt: Date.now() },
+        eveningNote: null,
         estimation: {
           planned: log.estimation?.planned ?? log.tasks.length,
           completed: log.tasks.filter((t) => t.done).length,
@@ -111,6 +149,54 @@ export default function Evening() {
       navigate("/", { replace: true });
     } catch {
       setNotice("スコアの算出に失敗しました。もう一度お試しください。");
+      setFinishing(false);
+    }
+  };
+
+  const finishQuick = async () => {
+    if (!uid || !log) return;
+    const firstTask = quickFirstTask.trim();
+    if (!firstTask) {
+      setNotice("明日の最初の1タスクを選ぶか入力してください。");
+      return;
+    }
+    setFinishing(true);
+    setNotice(null);
+    try {
+      const done = log.tasks.filter((t) => t.done).length;
+      const pace = log.tasks.length ? Math.round((done / log.tasks.length) * 100) : 0;
+      const moodAdjustments: Record<string, { n: number; m: number }> = {
+        よくできた: { n: 10, m: 15 },
+        まあまあ: { n: 0, m: 5 },
+        うまくいかなかった: { n: -10, m: -10 },
+        忙しくて手つかず: { n: -15, m: -20 },
+      };
+      const moodAdj = moodAdjustments[quickMood] ?? moodAdjustments["まあまあ"];
+      const narikiri = clamp(pace * 0.7 + (ideal ? 15 : 5) + moodAdj.n);
+      const motivation = clamp(pace * 0.6 + 25 + moodAdj.m);
+      await saveDailyLog(uid, today, {
+        scores: {
+          narikiri,
+          pace,
+          motivation,
+          narikiriReason: `完了タスクと理想像の習慣への一致度をもとに算出。`,
+          paceReason: `${log.tasks.length}タスク中${done}完了（完了率${pace}%）`,
+          motivationReason: `自己評価「${quickMood}」と達成状況をもとに算出。`,
+        },
+        tomorrowFirstTask: firstTask,
+        eveningDialogue: {
+          messages: [{ role: "assistant", content: "クイック振り返りで記録しました。" }],
+          completedAt: Date.now(),
+        },
+        eveningNote: quickMood,
+        estimation: {
+          planned: log.estimation?.planned ?? log.tasks.length,
+          completed: done,
+        },
+      });
+      navigate("/", { replace: true });
+    } catch {
+      setNotice("クイック振り返りの保存に失敗しました。もう一度お試しください。");
       setFinishing(false);
     }
   };
@@ -157,6 +243,67 @@ export default function Evening() {
         aiStarts
         disabled={finishing}
       />
+
+      <section className="mx-1 mb-2 rounded-2xl border hairline bg-night-900 p-3">
+        <p className="text-xs text-ink-500">サッと終える（対話なし）</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {["よくできた", "まあまあ", "うまくいかなかった", "忙しくて手つかず"].map((mood) => (
+            <button
+              key={mood}
+              onClick={() => {
+                setQuickMood(mood);
+                void loadQuickCandidates(mood);
+              }}
+              className={`rounded-xl border px-2 py-2 text-xs ${
+                quickMood === mood
+                  ? "border-gold-400/60 bg-gold-400/10 text-gold-300"
+                  : "hairline bg-night-800 text-ink-400"
+              }`}
+            >
+              {mood}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 space-y-2">
+          <button
+            onClick={() => void loadQuickCandidates(quickMood)}
+            disabled={loadingQuick}
+            className="w-full rounded-xl border border-gold-400/40 bg-night-800 py-2 text-xs text-gold-300 disabled:opacity-50"
+          >
+            {loadingQuick ? "候補を作成中…" : "明日の最初の1タスク候補を作る"}
+          </button>
+          {quickCandidates.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {quickCandidates.map((candidate) => (
+                <button
+                  key={candidate}
+                  onClick={() => setQuickFirstTask(candidate)}
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    quickFirstTask === candidate
+                      ? "border-gold-400/60 bg-gold-400/10 text-gold-300"
+                      : "hairline bg-night-800 text-ink-400"
+                  }`}
+                >
+                  {candidate}
+                </button>
+              ))}
+            </div>
+          )}
+          <input
+            value={quickFirstTask}
+            onChange={(e) => setQuickFirstTask(e.target.value)}
+            placeholder="明日の最初の1タスク（自由入力可）"
+            className="w-full rounded-xl border hairline bg-night-800 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-600"
+          />
+          <button
+            onClick={finishQuick}
+            disabled={finishing}
+            className="w-full rounded-xl bg-gold-400 py-2.5 text-sm font-bold text-night-950 disabled:opacity-50"
+          >
+            サッと終える
+          </button>
+        </div>
+      </section>
 
       {userTurns >= 2 && (
         <div className="px-1 pb-4">
