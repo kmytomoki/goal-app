@@ -24,7 +24,7 @@ export default function Welcome() {
         <h1 className="mt-4 text-[34px] font-semibold leading-snug text-[var(--color-text-main)]">
           理想の自分を、
           <br />
-          今日<span className="text-[var(--color-brand-500)]">演じる</span>。
+          今日<span className="text-[var(--color-brand-500)]">はじめる</span>。
         </h1>
         <div className="mt-6 h-px w-16 bg-[var(--color-brand-500)]/50" aria-hidden />
         <p className="mt-6 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">

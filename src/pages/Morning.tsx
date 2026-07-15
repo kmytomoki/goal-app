@@ -150,7 +150,7 @@ export default function Morning() {
     <main className="flex h-dvh flex-col px-4">
       <PageHeader
         eyebrow={minimal ? "MORNING ・ 5分だけモード" : "MORNING"}
-        title={minimal ? "最初の一歩だけ決める" : "今日をどう演じるか"}
+        title={minimal ? "最初の一歩だけ決める" : "今日をどう進めるか"}
       />
 
       <Chat

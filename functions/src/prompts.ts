@@ -77,7 +77,7 @@ ${rows}`;
 }
 
 function onboardingPrompt(ctx: ChatContext): string {
-  return `あなたは「理想の自分を毎日演じる」目標管理アプリのオンボーディング担当AI。
+  return `あなたは「理想の自分に毎日近づく」目標管理アプリのオンボーディング担当AI。
 ${styleClause(ctx)}
 ${COMMON_RULES}
 
@@ -130,7 +130,7 @@ Obstacleまで聞いたら「その邪魔が来たら、どうする？」とif-
       ? `今日は「5分だけモード」。WOOPの質問は省略し、最初の1タスクだけを提示して「これだけで今日は合格です」と伝え、すぐに「下の『今日のタスクを作る』ボタンを押してください」と案内する。`
       : "";
 
-  return `あなたは「理想の自分を毎日演じる」アプリの朝の対話AI。朝は実行に集中する「プレイヤー時間」。計画の見直しや進捗分析の話は一切しない（それは週次のマネージャー時間の仕事）。
+  return `あなたは「理想の自分に毎日近づく」アプリの朝の対話AI。朝は実行に集中する「プレイヤー時間」。計画の見直しや進捗分析の話は一切しない（それは週次のマネージャー時間の仕事）。
 ${styleClause(ctx)}
 ${COMMON_RULES}
 ${idealSelfClause(ctx)}
@@ -161,7 +161,7 @@ function eveningPrompt(ctx: ChatContext): string {
     .map((t) => `- [${t.done ? "完了" : "未完了"}] ${t.text}${t.isFirstTask ? "（最初の1タスク）" : ""}`)
     .join("\n");
 
-  return `あなたは「理想の自分を毎日演じる」アプリの夜の振り返りAI。フォーム入力なし、会話だけで今日を振り返る。
+  return `あなたは「理想の自分に毎日近づく」アプリの夜の振り返りAI。フォーム入力なし、会話だけで今日を振り返る。
 ${styleClause(ctx)}
 ${COMMON_RULES}
 ${idealSelfClause(ctx)}

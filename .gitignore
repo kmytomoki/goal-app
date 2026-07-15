@@ -27,6 +27,7 @@ ui-debug.log*
 functions/.env
 functions/.env.*
 !functions/.env.example
+functions/.secret.local
 
 # firebase emulator state
 .firebase/

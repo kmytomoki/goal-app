@@ -44,6 +44,15 @@ npm run dev         # Vite (5173)。.env.local の VITE_USE_FIREBASE_EMULATOR=tr
 5. 予定タブ(/upcoming)に日付セクション表示、日付移動したタスクが現れる
 6. 「今日は休む」→ ConfirmDialog → 休演日表示
 
+## AI 対話(chat / assist)の検証
+
+- functions は事前ビルドが必要: `npm --prefix functions run build`(エミュレータは `lib/` を実行する。/mnt/c では変更検知されないのでビルド+エミュレータ再起動)。
+- **シークレットは `functions/.secret.local`**(`GEMINI_API_KEY=...`)。`defineSecret` は `.env.local` を見ず、無いと本番 Secret Manager へ 401 で失敗し、chat が「AIの応答に失敗しました」を返す。
+- chat 単体テスト: 匿名 signUp で idToken を取得し、`POST http://127.0.0.1:5001/demo-goal-app/us-central1/chat` に `Authorization: Bearer <idToken>` + `{mode, messages, context}` → SSE の `data: {"text":...}` を確認。
+- assist 単体テスト: 同トークンで `POST .../assist` に callable 形式 `{"data":{"task":"extract_tasks","payload":{...}}}`。
+- 失敗時の原因は emulators ログの `chat stream failed` に出る。モデル提供終了(404)の場合は
+  `GET https://generativelanguage.googleapis.com/v1beta/models?key=...` で利用可能モデルを確認して `functions/src/gemini.ts` を更新。
+
 ## 注意
 
 - Firestore エミュレータは `orderBy(documentId(), "desc")` 非対応
