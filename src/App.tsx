@@ -7,11 +7,13 @@ import Morning from "./pages/Morning";
 import Evening from "./pages/Evening";
 import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";
+import Upcoming from "./pages/Upcoming";
+import AppShell from "./components/AppShell";
 
 function Loading() {
   return (
     <div className="flex min-h-dvh items-center justify-center">
-      <p className="font-display text-ink-400 text-sm tracking-widest">開演準備中…</p>
+      <p className="text-sm font-semibold tracking-widest text-[var(--color-text-secondary)]">開演準備中…</p>
     </div>
   );
 }
@@ -32,24 +34,25 @@ export default function App() {
   const onboarded = profile?.onboardingCompleted === true;
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md">
-      <Routes>
-        {!onboarded ? (
-          <>
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="*" element={<Navigate to="/onboarding" replace />} />
-          </>
-        ) : (
-          <>
+    <Routes>
+      {!onboarded ? (
+        <>
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="*" element={<Navigate to="/onboarding" replace />} />
+        </>
+      ) : (
+        <>
+          <Route element={<AppShell />}>
             <Route path="/" element={<Home />} />
-            <Route path="/morning" element={<Morning />} />
-            <Route path="/evening" element={<Evening />} />
+            <Route path="/upcoming" element={<Upcoming />} />
             <Route path="/weekly" element={<Weekly />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        )}
-      </Routes>
-    </div>
+          </Route>
+          <Route path="/morning" element={<Morning />} />
+          <Route path="/evening" element={<Evening />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      )}
+    </Routes>
   );
 }

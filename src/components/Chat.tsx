@@ -126,8 +126,8 @@ export default function Chat({
             <div
               className={
                 m.role === "user"
-                  ? "max-w-[85%] rounded-2xl rounded-br-sm bg-gold-400/15 px-4 py-2.5 text-[15px] leading-relaxed text-ink-100 ring-1 ring-gold-400/25"
-                  : "max-w-[85%] rounded-2xl rounded-bl-sm bg-night-800 px-4 py-2.5 text-[15px] leading-relaxed text-ink-100 whitespace-pre-wrap"
+                  ? "max-w-[85%] rounded-2xl rounded-br-sm bg-[color-mix(in_srgb,var(--color-brand-500)_12%,white)] px-4 py-2.5 text-[15px] leading-relaxed text-[var(--color-text-main)] ring-1 ring-[color-mix(in_srgb,var(--color-brand-500)_24%,white)]"
+                  : "max-w-[85%] rounded-2xl rounded-bl-sm bg-[var(--color-bg-surface)] px-4 py-2.5 text-[15px] leading-relaxed text-[var(--color-text-main)] whitespace-pre-wrap"
               }
             >
               {parsed.cleaned || "…"}
@@ -137,8 +137,8 @@ export default function Chat({
         })}
         {streaming && (
           <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-night-800 px-4 py-2.5 text-[15px] leading-relaxed text-ink-100 whitespace-pre-wrap">
-              {streamText || <span className="text-ink-600">…</span>}
+            <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-[var(--color-bg-surface)] px-4 py-2.5 text-[15px] leading-relaxed text-[var(--color-text-main)] whitespace-pre-wrap">
+              {streamText || <span className="text-[var(--color-text-faint)]">…</span>}
             </div>
           </div>
         )}
@@ -153,14 +153,14 @@ export default function Chat({
         <div ref={bottomRef} />
       </div>
 
-      <div className="sticky bottom-0 border-t hairline bg-night-950/90 px-1 py-3 backdrop-blur">
+      <div className="sticky bottom-0 border-t border-[var(--color-line)] bg-[var(--color-bg-page)]/95 px-1 py-3 backdrop-blur">
         {quickChoices.length > 0 && !streaming && !disabled && (
           <div className="mb-2 flex flex-wrap gap-2 px-1">
             {quickChoices.map((choice) => (
               <button
                 key={choice}
                 onClick={() => sendQuickChoice(choice)}
-                className="rounded-full border border-gold-400/35 bg-gold-400/10 px-3 py-1 text-xs text-gold-300"
+                className="rounded-full border border-[color-mix(in_srgb,var(--color-brand-500)_40%,white)] bg-[color-mix(in_srgb,var(--color-brand-500)_12%,white)] px-3 py-1 text-xs text-[var(--color-brand-600)]"
               >
                 {choice}
               </button>
@@ -180,12 +180,12 @@ export default function Chat({
             rows={1}
             placeholder={placeholder}
             disabled={disabled || streaming}
-            className="min-h-[44px] flex-1 resize-none rounded-xl border hairline bg-night-900 px-4 py-2.5 text-[15px] text-ink-100 placeholder:text-ink-600 disabled:opacity-50"
+            className="min-h-[44px] flex-1 resize-none rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-4 py-2.5 text-[15px] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)] disabled:opacity-50"
           />
           <button
             onClick={send}
             disabled={!input.trim() || streaming || disabled}
-            className="h-[44px] shrink-0 rounded-xl bg-gold-400 px-4 font-medium text-night-950 transition-opacity disabled:opacity-30"
+            className="h-[44px] shrink-0 rounded-xl bg-[var(--color-brand-500)] px-4 font-medium text-white transition-opacity disabled:opacity-30"
           >
             送る
           </button>

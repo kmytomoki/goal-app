@@ -12,6 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { normalizeTasks } from "./tasks";
 import type { DailyLog, IdealSelf, UserProfile, WeeklyReview } from "./types";
 
 const userDoc = (uid: string) => doc(db, "users", uid);
@@ -51,9 +52,16 @@ export function emptyDailyLog(date: string): DailyLog {
   };
 }
 
+function normalizeDailyLog(log: DailyLog): DailyLog {
+  return {
+    ...log,
+    tasks: normalizeTasks(log.tasks),
+  };
+}
+
 export async function getDailyLog(uid: string, date: string): Promise<DailyLog | null> {
   const snap = await getDoc(dailyLogDoc(uid, date));
-  return snap.exists() ? (snap.data() as DailyLog) : null;
+  return snap.exists() ? normalizeDailyLog(snap.data() as DailyLog) : null;
 }
 
 export async function saveDailyLog(uid: string, date: string, log: Partial<DailyLog>): Promise<void> {
@@ -66,25 +74,37 @@ export async function updateDailyLog(uid: string, date: string, patch: Record<st
 
 // 直近 n 日分のログ（新しい順）
 export async function getRecentLogs(uid: string, n: number): Promise<DailyLog[]> {
+  // documentId() の降順はエミュレータ非対応（descending key scans）のため、同値の date フィールドで並べる
   const q = query(
     collection(db, "users", uid, "dailyLogs"),
-    orderBy(documentId(), "desc"),
+    orderBy("date", "desc"),
     limit(n),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as DailyLog);
+  return snap.docs.map((d) => normalizeDailyLog(d.data() as DailyLog));
 }
 
 // 指定日より前の最後のログ（戻る仕組みの空白日数判定に使う）
 export async function getLastLogBefore(uid: string, date: string): Promise<DailyLog | null> {
   const q = query(
     collection(db, "users", uid, "dailyLogs"),
-    where(documentId(), "<", date),
-    orderBy(documentId(), "desc"),
+    where("date", "<", date),
+    orderBy("date", "desc"),
     limit(1),
   );
   const snap = await getDocs(q);
-  return snap.empty ? null : (snap.docs[0].data() as DailyLog);
+  return snap.empty ? null : normalizeDailyLog(snap.docs[0].data() as DailyLog);
+}
+
+export async function getLogsInRange(uid: string, fromDate: string, toDate: string): Promise<DailyLog[]> {
+  const q = query(
+    collection(db, "users", uid, "dailyLogs"),
+    where(documentId(), ">=", fromDate),
+    where(documentId(), "<=", toDate),
+    orderBy(documentId(), "asc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => normalizeDailyLog(d.data() as DailyLog));
 }
 
 export async function getWeeklyReview(uid: string, week: string): Promise<WeeklyReview | null> {

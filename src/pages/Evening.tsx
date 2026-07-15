@@ -79,9 +79,11 @@ export default function Evening() {
     }
   };
 
-  const toggleTask = async (index: number) => {
+  const toggleTask = async (taskId: string) => {
     if (!uid || !log) return;
-    const tasks = log.tasks.map((t, i) => (i === index ? { ...t, done: !t.done } : t));
+    const tasks = log.tasks.map((task) =>
+      task.id === taskId ? { ...task, done: !task.done } : task,
+    );
     const next = { ...log, tasks };
     logRef.current = next;
     setLog(next);
@@ -204,7 +206,7 @@ export default function Evening() {
   if (loading || !context) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p className="font-display text-sm tracking-widest text-ink-400">夜の振り返りを準備中…</p>
+        <p className="text-sm font-semibold tracking-widest text-[var(--color-text-secondary)]">夜の振り返りを準備中…</p>
       </main>
     );
   }
@@ -213,7 +215,7 @@ export default function Evening() {
     return (
       <main className="px-4">
         <PageHeader eyebrow="NIGHT" title="夜の振り返り" />
-        <p className="mt-6 rounded-xl border hairline bg-night-900 px-4 py-6 text-center text-sm text-ink-400">
+        <p className="card mt-6 px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           今日の振り返りは完了しています。おつかれさまでした。
         </p>
       </main>
@@ -226,7 +228,7 @@ export default function Evening() {
 
       {log && log.tasks.length > 0 && (
         <details className="mb-1 px-1" open={!log.tasks.some((t) => t.done)}>
-          <summary className="cursor-pointer py-1 text-xs text-ink-400">
+          <summary className="cursor-pointer py-1 text-xs text-[var(--color-text-secondary)]">
             できたものにチェックしてから話しましょう
           </summary>
           <div className="pt-2">
@@ -244,8 +246,8 @@ export default function Evening() {
         disabled={finishing}
       />
 
-      <section className="mx-1 mb-2 rounded-2xl border hairline bg-night-900 p-3">
-        <p className="text-xs text-ink-500">サッと終える（対話なし）</p>
+      <section className="card mx-1 mb-2 p-3">
+        <p className="text-xs text-[var(--color-text-secondary)]">サッと終える（対話なし）</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {["よくできた", "まあまあ", "うまくいかなかった", "忙しくて手つかず"].map((mood) => (
             <button
@@ -256,8 +258,8 @@ export default function Evening() {
               }}
               className={`rounded-xl border px-2 py-2 text-xs ${
                 quickMood === mood
-                  ? "border-gold-400/60 bg-gold-400/10 text-gold-300"
-                  : "hairline bg-night-800 text-ink-400"
+                  ? "border-[var(--color-brand-500)]/60 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] text-[var(--color-brand-600)]"
+                  : "border-[var(--color-line)] bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]"
               }`}
             >
               {mood}
@@ -268,7 +270,7 @@ export default function Evening() {
           <button
             onClick={() => void loadQuickCandidates(quickMood)}
             disabled={loadingQuick}
-            className="w-full rounded-xl border border-gold-400/40 bg-night-800 py-2 text-xs text-gold-300 disabled:opacity-50"
+            className="w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-2 text-xs text-[var(--color-brand-600)] disabled:opacity-50"
           >
             {loadingQuick ? "候補を作成中…" : "明日の最初の1タスク候補を作る"}
           </button>
@@ -280,8 +282,8 @@ export default function Evening() {
                   onClick={() => setQuickFirstTask(candidate)}
                   className={`rounded-full border px-3 py-1 text-xs ${
                     quickFirstTask === candidate
-                      ? "border-gold-400/60 bg-gold-400/10 text-gold-300"
-                      : "hairline bg-night-800 text-ink-400"
+                      ? "border-[var(--color-brand-500)]/60 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] text-[var(--color-brand-600)]"
+                      : "border-[var(--color-line)] bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]"
                   }`}
                 >
                   {candidate}
@@ -293,12 +295,12 @@ export default function Evening() {
             value={quickFirstTask}
             onChange={(e) => setQuickFirstTask(e.target.value)}
             placeholder="明日の最初の1タスク（自由入力可）"
-            className="w-full rounded-xl border hairline bg-night-800 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-600"
+            className="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
           />
           <button
             onClick={finishQuick}
             disabled={finishing}
-            className="w-full rounded-xl bg-gold-400 py-2.5 text-sm font-bold text-night-950 disabled:opacity-50"
+            className="btn-primary w-full rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
           >
             サッと終える
           </button>
@@ -308,14 +310,14 @@ export default function Evening() {
       {userTurns >= 2 && (
         <div className="px-1 pb-4">
           {notice && (
-            <p className="mb-2 rounded-xl border border-gold-400/30 bg-gold-400/10 px-3 py-2 text-sm text-gold-300">
+            <p className="mb-2 rounded-xl border border-[var(--color-brand-500)]/30 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] px-3 py-2 text-sm text-[var(--color-brand-600)]">
               {notice}
             </p>
           )}
           <button
             onClick={finish}
             disabled={finishing}
-            className="w-full rounded-2xl bg-gold-400 py-3.5 font-bold text-night-950 disabled:opacity-50"
+            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
           >
             {finishing ? "今日を記録しています…" : "振り返りを終える"}
           </button>

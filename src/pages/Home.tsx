@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ScoreChart, { type DayScore } from "../components/ScoreChart";
 import TaskList from "../components/TaskList";
+import ConfirmDialog from "../components/ConfirmDialog";
+import TaskDetailSheet from "../components/TaskDetailSheet";
 import { emptyDailyLog, getDailyLog, getLastLogBefore, getRecentLogs, saveDailyLog } from "../lib/db";
 import { addDays, dayCountSince, localDateKey, woopStageForDay } from "../lib/dates";
+import { createTask, insertTask, removeTask, restoreTask, updateTask } from "../lib/tasks";
 import { useApp } from "../lib/useApp";
 import type { DailyLog, Task } from "../lib/types";
 
@@ -18,6 +21,9 @@ export default function Home() {
   const [prevUndoneTasks, setPrevUndoneTasks] = useState<string[]>([]);
   const [quickStarting, setQuickStarting] = useState(false);
   const [openReason, setOpenReason] = useState<"narikiri" | "pace" | "motivation" | null>(null);
+  const [showRestConfirm, setShowRestConfirm] = useState(false);
+  const [deleted, setDeleted] = useState<{ task: Task; index: number } | null>(null);
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
 
   const uid = user?.uid;
@@ -42,6 +48,12 @@ export default function Home() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const listener = () => void load();
+    window.addEventListener("tasks:updated", listener);
+    return () => window.removeEventListener("tasks:updated", listener);
   }, [load]);
 
   const days: DayScore[] = useMemo(() => {
@@ -77,9 +89,7 @@ export default function Home() {
       }
 
       const tasks: Task[] = candidates.map((text, index) => ({
-        text,
-        done: false,
-        isFirstTask: index === 0,
+        ...createTask({ text, done: false, isFirstTask: index === 0, priority: 4 }),
       }));
       await saveDailyLog(uid, today, {
         ...base,
@@ -98,10 +108,37 @@ export default function Home() {
     }
   };
 
-  const toggleTask = async (index: number) => {
+  const toggleTask = async (taskId: string) => {
     if (!uid || !log) return;
-    const tasks = log.tasks.map((t, i) => (i === index ? { ...t, done: !t.done } : t));
+    const tasks = log.tasks.map((task) =>
+      task.id === taskId ? { ...task, done: !task.done } : task,
+    );
     setLog({ ...log, tasks });
+    await saveDailyLog(uid, today, { tasks });
+  };
+
+  const editTaskText = async (taskId: string, text: string) => {
+    if (!uid || !log) return;
+    const tasks = updateTask(log.tasks, taskId, { text });
+    setLog({ ...log, tasks });
+    await saveDailyLog(uid, today, { tasks });
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!uid || !log) return;
+    const result = removeTask(log.tasks, taskId);
+    if (!result.removed) return;
+    setLog({ ...log, tasks: result.tasks });
+    setDeleted({ task: result.removed, index: result.index });
+    setTimeout(() => setDeleted((prev) => (prev?.task.id === result.removed?.id ? null : prev)), 5000);
+    await saveDailyLog(uid, today, { tasks: result.tasks });
+  };
+
+  const undoDelete = async () => {
+    if (!uid || !log || !deleted) return;
+    const tasks = restoreTask(log.tasks, deleted.task, deleted.index);
+    setLog({ ...log, tasks });
+    setDeleted(null);
     await saveDailyLog(uid, today, { tasks });
   };
 
@@ -114,7 +151,6 @@ export default function Home() {
 
   const restToday = async () => {
     if (!uid) return;
-    if (!window.confirm("今日は休むと記録します。連続日数は途切れません。よろしいですか？")) return;
     const base = log ?? emptyDailyLog(today);
     await saveDailyLog(uid, today, {
       ...base,
@@ -133,7 +169,7 @@ export default function Home() {
   if (loading) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p className="font-display text-sm tracking-widest text-ink-400">今日の舞台を準備中…</p>
+        <p className="text-sm font-semibold tracking-widest text-[var(--color-text-secondary)]">今日の舞台を準備中…</p>
       </main>
     );
   }
@@ -142,28 +178,21 @@ export default function Home() {
     <main className="px-4 pb-12">
       <header className="flex items-start justify-between px-1 pt-6">
         <div>
-          <p className="text-xs text-ink-600">{dateLabel}</p>
-          <h1 className="font-display mt-1 text-xl text-ink-100">
+          <p className="text-xs text-[var(--color-text-faint)]">{dateLabel}</p>
+          <h1 className="mt-1 text-xl font-semibold text-[var(--color-text-main)]">
             {ideal?.title ?? "理想の自分"}
-            <span className="ml-2 text-sm text-gold-300">Day {dayCount}</span>
+            <span className="ml-2 text-sm text-[var(--color-brand-500)]">Day {dayCount}</span>
           </h1>
           {profile?.triggerHabit && (
-            <p className="mt-1 text-xs text-ink-600">きっかけ: {profile.triggerHabit}</p>
+            <p className="mt-1 text-xs text-[var(--color-text-faint)]">きっかけ: {profile.triggerHabit}</p>
           )}
         </div>
-        <Link
-          to="/settings"
-          aria-label="設定"
-          className="flex h-9 w-9 items-center justify-center rounded-full border hairline text-ink-400"
-        >
-          ⚙
-        </Link>
       </header>
 
       {isRestDay ? (
         <section className="spotlight rise mt-6 rounded-2xl p-6 text-center">
-          <p className="font-display text-base text-gold-300">今日は休演日</p>
-          <p className="mt-2 text-sm leading-relaxed text-ink-400">
+          <p className="text-base font-semibold text-[var(--color-brand-500)]">今日は休演日</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
             休むと伝えられたことも、続いている証拠です。
             <br />
             記録は途切れていません。また明日。
@@ -174,39 +203,39 @@ export default function Home() {
           {/* 今日の最初の一歩（スポットライト） */}
           {!morningDone && (
             <section className="spotlight rise mt-6 rounded-2xl p-5">
-              <p className="font-display text-[11px] tracking-[0.25em] text-gold-300">
+              <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--color-brand-500)]">
                 今日の最初の一歩
               </p>
               {prevFirstTask ? (
-                <p className="mt-2 text-lg leading-snug text-ink-100">{prevFirstTask}</p>
+                <p className="mt-2 text-lg leading-snug text-[var(--color-text-main)]">{prevFirstTask}</p>
               ) : (
-                <p className="mt-2 text-sm leading-relaxed text-ink-400">
+                <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
                   朝の対話で、今日の最初の一歩を決めましょう。
                 </p>
               )}
               <button
                 onClick={quickStartToday}
-                className="mt-4 w-full rounded-xl bg-gold-400 py-3 font-bold text-night-950"
+                className="btn-primary mt-4 w-full rounded-xl py-3 font-bold"
                 disabled={quickStarting}
               >
                 {quickStarting ? "タスクを準備中…" : "タップで開始"}
               </button>
               <button
                 onClick={() => navigate("/morning")}
-                className="mt-2 w-full rounded-xl border border-gold-400/40 bg-night-800 py-3 font-medium text-gold-300"
+                className="mt-2 w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-3 font-medium text-[var(--color-brand-600)]"
               >
                 AIと話して決める
               </button>
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={startBusyDay}
-                  className="flex-1 rounded-xl border hairline py-2.5 text-xs text-ink-400"
+                  className="flex-1 rounded-xl border border-[var(--color-line)] py-2.5 text-xs text-[var(--color-text-secondary)]"
                 >
                   今日は忙しい（5分だけ）
                 </button>
                 <button
-                  onClick={restToday}
-                  className="flex-1 rounded-xl border hairline py-2.5 text-xs text-ink-400"
+                  onClick={() => setShowRestConfirm(true)}
+                  className="flex-1 rounded-xl border border-[var(--color-line)] py-2.5 text-xs text-[var(--color-text-secondary)]"
                 >
                   今日は休む
                 </button>
@@ -217,24 +246,27 @@ export default function Home() {
           {/* 今日のタスク */}
           {(log?.tasks.length ?? 0) > 0 && (
             <section className="rise mt-6">
-              <h2 className="font-display px-1 pb-2 text-sm tracking-widest text-ink-400">
+              <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
                 今日の演目
               </h2>
               <TaskList
                 tasks={log!.tasks}
                 onToggle={eveningDone ? undefined : toggleTask}
+                onEditText={eveningDone ? undefined : editTaskText}
+                onDelete={eveningDone ? undefined : deleteTask}
+                onOpenDetail={(task) => setDetailTask(task)}
                 minimal={log!.mode === "minimal"}
               />
               {morningDone && !eveningDone && (
                 <button
                   onClick={() => navigate("/evening")}
-                  className="mt-4 w-full rounded-xl border border-gold-400/40 bg-night-800 py-3 font-medium text-gold-300"
+                  className="mt-4 w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-3 font-medium text-[var(--color-brand-600)]"
                 >
                   夜の振り返りをはじめる
                 </button>
               )}
               {eveningDone && (
-                <p className="mt-4 rounded-xl border hairline bg-night-900 px-4 py-3 text-center text-sm text-ink-400">
+                <p className="card mt-4 px-4 py-3 text-center text-sm text-[var(--color-text-secondary)]">
                   今日の幕は下りました。おつかれさまでした。
                 </p>
               )}
@@ -245,8 +277,8 @@ export default function Home() {
 
       {/* スコア */}
       <section className="rise mt-8">
-        <h2 className="font-display px-1 pb-2 text-sm tracking-widest text-ink-400">この7日間</h2>
-        <div className="rounded-2xl border hairline bg-night-900 p-4">
+        <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">この7日間</h2>
+        <div className="card p-4">
           {log?.scores && (
             <div
               className="mb-4 grid grid-cols-3 gap-2 text-center"
@@ -277,10 +309,10 @@ export default function Home() {
                             : "motivation",
                     )
                   }
-                  className="rounded-xl bg-night-800 py-2.5 text-center"
+                  className="rounded-xl bg-[var(--color-bg-muted)] py-2.5 text-center"
                 >
-                  <p className="text-[22px] font-bold text-ink-100">{value}</p>
-                  <p className="mt-0.5 flex items-center justify-center gap-1 text-[11px] text-ink-400">
+                  <p className="text-[22px] font-bold text-[var(--color-text-main)]">{value}</p>
+                  <p className="mt-0.5 flex items-center justify-center gap-1 text-[11px] text-[var(--color-text-secondary)]">
                     <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
                     {label}
                   </p>
@@ -289,7 +321,7 @@ export default function Home() {
             </div>
           )}
           {log?.scores && openReason && (
-            <p className="mb-4 rounded-xl border hairline bg-night-800 px-3 py-2 text-xs leading-relaxed text-ink-300">
+            <p className="mb-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">
               {openReason === "narikiri"
                 ? log.scores.narikiriReason ?? "今日の行動と理想像の一致度から算出。"
                 : openReason === "pace"
@@ -301,14 +333,59 @@ export default function Home() {
         </div>
       </section>
 
-      <nav className="mt-8 flex gap-2 px-1">
-        <Link
-          to="/weekly"
-          className="flex-1 rounded-xl border hairline bg-night-900 py-3 text-center text-sm text-ink-400"
-        >
-          週次振り返り
-        </Link>
-      </nav>
+      {deleted && (
+        <div className="fixed right-4 bottom-24 left-4 z-30 mx-auto max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-main)] shadow">
+          タスクを削除しました
+          <button onClick={() => void undoDelete()} className="ml-3 font-semibold text-[var(--color-brand-500)]">
+            元に戻す
+          </button>
+        </div>
+      )}
+      <ConfirmDialog
+        open={showRestConfirm}
+        title="今日は休む"
+        description="今日は休むと記録します。連続日数は途切れません。"
+        confirmLabel="休む"
+        cancelLabel="戻る"
+        onCancel={() => setShowRestConfirm(false)}
+        onConfirm={() => {
+          setShowRestConfirm(false);
+          void restToday();
+        }}
+      />
+      <TaskDetailSheet
+        open={Boolean(detailTask)}
+        task={detailTask}
+        date={today}
+        onClose={() => setDetailTask(null)}
+        onDelete={async (taskId) => {
+          await deleteTask(taskId);
+          setDetailTask(null);
+        }}
+        onSave={async ({ taskId, text, priority, date }) => {
+          if (!uid || !log) return;
+          if (date === today) {
+            const tasks = updateTask(log.tasks, taskId, { text, priority });
+            setLog({ ...log, tasks });
+            await saveDailyLog(uid, today, { tasks });
+            return;
+          }
+          const sourceRemoved = removeTask(log.tasks, taskId);
+          if (!sourceRemoved.removed) return;
+          const destination = (await getDailyLog(uid, date)) ?? emptyDailyLog(date);
+          const destinationTasks = insertTask(destination.tasks, {
+            ...sourceRemoved.removed,
+            text,
+            priority,
+          });
+          await Promise.all([
+            saveDailyLog(uid, today, { tasks: sourceRemoved.tasks }),
+            saveDailyLog(uid, date, { ...destination, tasks: destinationTasks }),
+          ]);
+          setDetailTask(null);
+          await load();
+        }}
+      />
     </main>
   );
 }

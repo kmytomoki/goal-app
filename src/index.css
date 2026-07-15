@@ -1,82 +1,102 @@
 @import "tailwindcss";
 
-/*
- * ステージ（舞台）テーマ — 暗転した劇場とスポットライトの金。
- * 「理想の自分を演じる」アプリの視覚言語。
- */
 @theme {
   --font-sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
-  --font-display: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+  --font-display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
 
-  /* 夜の舞台（暖色寄りのダーク） */
-  --color-night-950: #0f0e0c;
-  --color-night-900: #1a1814;
-  --color-night-800: #242019;
-  --color-night-700: #35301f;
+  --color-bg-page: #ffffff;
+  --color-bg-surface: #fafafa;
+  --color-bg-muted: #f3f4f6;
+  --color-text-main: #202020;
+  --color-text-secondary: #6b7280;
+  --color-text-faint: #9ca3af;
+  --color-line: #e5e7eb;
+  --color-brand-500: #dc4c3e;
+  --color-brand-600: #c93f32;
+  --color-priority-1: #d1453b;
+  --color-priority-2: #eb8909;
+  --color-priority-3: #246fe0;
+  --color-priority-4: #9ca3af;
 
-  /* スポットライトの金 */
-  --color-gold-300: #e8c36a;
-  --color-gold-400: #d4a94c;
-  --color-gold-600: #a87e2f;
-
-  /* インク */
-  --color-ink-100: #f2ede3;
-  --color-ink-400: #a79e8c;
-  --color-ink-600: #6e675c;
-
-  /* チャート系列（ダーク面 #1a1814 で検証済み） */
-  --color-series-narikiri: #c98500;
+  --color-series-narikiri: #d1453b;
   --color-series-pace: #3987e5;
   --color-series-motivation: #199e70;
 }
 
 html {
-  background: var(--color-night-950);
+  background: var(--color-bg-page);
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
-  color: var(--color-ink-100);
-  background:
-    radial-gradient(ellipse 90% 40% at 50% -8%, rgba(212, 169, 76, 0.09), transparent 70%),
-    var(--color-night-950);
+  color: var(--color-text-main);
+  background: var(--color-bg-page);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
 }
 
-/* シグネチャ: 「最初の一歩」スポットライトカード */
 .spotlight {
   position: relative;
-  background:
-    radial-gradient(ellipse 120% 90% at 50% -30%, rgba(232, 195, 106, 0.16), transparent 65%),
-    var(--color-night-800);
-  border: 1px solid rgba(232, 195, 106, 0.28);
+  background: color-mix(in srgb, var(--color-brand-500) 7%, var(--color-bg-page));
+  border: 1px solid color-mix(in srgb, var(--color-brand-500) 18%, var(--color-bg-page));
+  border-left: 4px solid var(--color-brand-500);
 }
 .spotlight::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(232, 195, 106, 0.14), transparent 40%);
-  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
-  mask-composite: exclude;
-  padding: 1px;
+  content: none;
 }
 
 .hairline {
-  border-color: rgba(232, 195, 106, 0.12);
+  border-color: var(--color-line);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-gold-400);
+  outline: 2px solid var(--color-brand-500);
   outline-offset: 2px;
+}
+
+.card {
+  border: 1px solid var(--color-line);
+  background: var(--color-bg-surface);
+  border-radius: 14px;
+}
+
+.text-main {
+  color: var(--color-text-main);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-faint {
+  color: var(--color-text-faint);
+}
+
+.bg-surface {
+  background: var(--color-bg-surface);
+}
+
+.bg-muted {
+  background: var(--color-bg-muted);
+}
+
+.btn-primary {
+  background: var(--color-brand-500);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--color-brand-600);
+}
+
+.app-shell {
+  background: var(--color-bg-page);
 }
 
 @keyframes rise {

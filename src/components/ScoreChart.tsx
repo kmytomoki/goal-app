@@ -48,7 +48,7 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
     <div>
       <div className="mb-2 flex items-center gap-4">
         {SERIES.map((s) => (
-          <span key={s.key} className="flex items-center gap-1.5 text-xs text-ink-400">
+          <span key={s.key} className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
             <span className="h-2 w-2 rounded-full" style={{ background: s.color }} aria-hidden />
             {s.label}
           </span>
@@ -56,7 +56,7 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
       </div>
 
       {!hasAny ? (
-        <p className="rounded-xl border hairline bg-night-900 px-4 py-6 text-center text-sm text-ink-400">
+        <p className="card px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           夜の振り返りをするとスコアの推移が見えてきます。
         </p>
       ) : (
@@ -74,14 +74,14 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
                   x2={W - PAD.right}
                   y1={y(v)}
                   y2={y(v)}
-                  stroke="rgba(232,195,106,0.10)"
+                  stroke="var(--color-line)"
                   strokeWidth={1}
                 />
                 <text
                   x={W - PAD.right + 4}
                   y={y(v) + 3}
                   fontSize={9}
-                  fill="var(--color-ink-600)"
+                  fill="var(--color-text-faint)"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   {v}
@@ -109,7 +109,7 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
                       cy={y(p.v)}
                       r={selected === p.i ? 4 : 2.5}
                       fill={series.color}
-                      stroke="var(--color-night-900)"
+                      stroke="var(--color-bg-page)"
                       strokeWidth={1.5}
                     />
                   ))}
@@ -125,7 +125,7 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
                 y={H - 4}
                 fontSize={9}
                 textAnchor="middle"
-                fill={selected === i ? "var(--color-ink-100)" : "var(--color-ink-600)"}
+                fill={selected === i ? "var(--color-text-main)" : "var(--color-text-faint)"}
                 style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {Number(d.date.slice(8, 10))}
@@ -147,7 +147,7 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
           </svg>
 
           <p
-            className="mt-1 min-h-5 text-xs text-ink-400"
+            className="mt-1 min-h-5 text-xs text-[var(--color-text-secondary)]"
             style={{ fontVariantNumeric: "tabular-nums" }}
             aria-live="polite"
           >

@@ -26,9 +26,11 @@ export interface IdealSelf {
 }
 
 export interface Task {
+  id: string;
   text: string;
   done: boolean;
   isFirstTask: boolean;
+  priority?: 1 | 2 | 3 | 4;
 }
 
 export interface Scores {

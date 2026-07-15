@@ -5,6 +5,7 @@ import PageHeader from "../components/PageHeader";
 import { extractTasks } from "../lib/api";
 import { emptyDailyLog, getDailyLog, getLastLogBefore, getRecentLogs, saveDailyLog } from "../lib/db";
 import { dayCountSince, diffDays, localDateKey, woopStageForDay } from "../lib/dates";
+import { createTask } from "../lib/tasks";
 import { useApp } from "../lib/useApp";
 import type { ChatContext, ChatMessage, DailyLog, Task } from "../lib/types";
 
@@ -112,7 +113,7 @@ export default function Morning() {
       const list: Task[] = tasks.map((t, i) => {
         const isFirst = !firstSeen && (t.isFirstTask || i === 0);
         if (isFirst) firstSeen = true;
-        return { text: t.text, done: false, isFirstTask: isFirst };
+        return createTask({ text: t.text, done: false, isFirstTask: isFirst, priority: 4 });
       });
       await saveDailyLog(uid, today, {
         tasks: list,
@@ -129,7 +130,7 @@ export default function Morning() {
   if (loading || !context) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p className="font-display text-sm tracking-widest text-ink-400">朝の対話を準備中…</p>
+        <p className="text-sm font-semibold tracking-widest text-[var(--color-text-secondary)]">朝の対話を準備中…</p>
       </main>
     );
   }
@@ -138,7 +139,7 @@ export default function Morning() {
     return (
       <main className="px-4">
         <PageHeader eyebrow="MORNING" title="朝の対話" />
-        <p className="mt-6 rounded-xl border hairline bg-night-900 px-4 py-6 text-center text-sm text-ink-400">
+        <p className="card mt-6 px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           今日の朝の対話は完了しています。
         </p>
       </main>
@@ -167,7 +168,7 @@ export default function Morning() {
           <button
             onClick={finish}
             disabled={finishing}
-            className="w-full rounded-2xl bg-gold-400 py-3.5 font-bold text-night-950 disabled:opacity-50"
+            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
           >
             {finishing ? "チェックリストを作成中…" : "今日のタスクを作る"}
           </button>

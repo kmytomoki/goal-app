@@ -6,15 +6,15 @@ export default function PageHeader({ title, eyebrow }: { title: string; eyebrow?
       <Link
         to="/"
         aria-label="ホームへ戻る"
-        className="flex h-9 w-9 items-center justify-center rounded-full border hairline text-ink-400"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] text-[var(--color-text-secondary)]"
       >
         ←
       </Link>
       <div>
         {eyebrow && (
-          <p className="font-display text-[11px] tracking-[0.25em] text-gold-300">{eyebrow}</p>
+          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--color-text-secondary)]">{eyebrow}</p>
         )}
-        <h1 className="font-display text-lg text-ink-100">{title}</h1>
+        <h1 className="text-lg font-semibold text-[var(--color-text-main)]">{title}</h1>
       </div>
     </header>
   );

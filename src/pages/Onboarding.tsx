@@ -119,11 +119,11 @@ export default function Onboarding() {
   if (!draft.path) {
     return (
       <main className="flex min-h-dvh flex-col px-5 py-10">
-        <p className="font-display text-[11px] tracking-[0.3em] text-gold-300">次のステップ</p>
-        <h1 className="font-display mt-3 text-2xl leading-snug text-ink-100">
+        <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">次のステップ</p>
+        <h1 className="mt-3 text-2xl font-semibold leading-snug text-[var(--color-text-main)]">
           はじめ方を選んでください
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-ink-400">
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
           仮の設定で始めて、あとから設定で育てることもできます。
         </p>
         <div className="mt-8 space-y-4">
@@ -131,17 +131,17 @@ export default function Onboarding() {
             onClick={() => setDraft((d) => ({ ...d, path: "chat" }))}
             className="spotlight w-full rounded-2xl p-5 text-left"
           >
-            <p className="font-display text-base text-gold-300">対話で決める</p>
-            <p className="mt-2 text-sm leading-relaxed text-ink-400">
+            <p className="text-base font-semibold text-[var(--color-brand-500)]">対話で決める</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
               AIと短く話しながら理想像・開始条件・最低ラインを整えます。
             </p>
           </button>
           <button
             onClick={() => setDraft((d) => ({ ...d, path: "archetype" }))}
-            className="w-full rounded-2xl border hairline bg-night-900 p-5 text-left"
+            className="card w-full p-5 text-left"
           >
-            <p className="font-display text-base text-ink-100">タップで決める（仮でOK）</p>
-            <p className="mt-2 text-sm leading-relaxed text-ink-400">
+            <p className="text-base font-semibold text-[var(--color-text-main)]">タップで決める（仮でOK）</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
               近いアーキタイプを選んで、すぐ開始できます。
             </p>
           </button>
@@ -184,8 +184,8 @@ export default function Onboarding() {
     return (
       <main className="px-4 pb-10">
         <header className="px-1 pt-5 pb-1">
-          <p className="font-display text-[11px] tracking-[0.3em] text-gold-300">かんたん開始</p>
-          <h1 className="font-display text-lg text-ink-100">近い理想像を選ぶ</h1>
+          <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">かんたん開始</p>
+          <h1 className="text-lg font-semibold text-[var(--color-text-main)]">近い理想像を選ぶ</h1>
         </header>
         <div className="mt-4 grid gap-3">
           {ARCHETYPES.map((item) => (
@@ -194,12 +194,12 @@ export default function Onboarding() {
               onClick={() => setDraft((d) => ({ ...d, archetypeId: item.id }))}
               className={`rounded-2xl border p-4 text-left ${
                 draft.archetypeId === item.id
-                  ? "border-gold-400/60 bg-gold-400/10"
-                  : "hairline bg-night-900"
+                  ? "border-[var(--color-brand-500)]/60 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)]"
+                  : "card"
               }`}
             >
-              <p className="font-display text-base text-ink-100">{item.title}</p>
-              <p className="mt-1 text-sm text-ink-400">{item.description}</p>
+              <p className="text-base font-semibold text-[var(--color-text-main)]">{item.title}</p>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{item.description}</p>
             </button>
           ))}
         </div>
@@ -208,19 +208,19 @@ export default function Onboarding() {
             value={draft.triggerHabit ?? ""}
             onChange={(e) => setDraft((d) => ({ ...d, triggerHabit: e.target.value }))}
             placeholder="毎日のきっかけ（例: 朝食後に机に座ったら）"
-            className="w-full rounded-xl border hairline bg-night-900 px-4 py-3 text-[15px] text-ink-100 placeholder:text-ink-600"
+            className="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-4 py-3 text-[15px] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
           />
           <input
             value={draft.minimalRule ?? ""}
             onChange={(e) => setDraft((d) => ({ ...d, minimalRule: e.target.value }))}
             placeholder="忙しい日の最低ライン（例: 5分だけでもOK）"
-            className="w-full rounded-xl border hairline bg-night-900 px-4 py-3 text-[15px] text-ink-100 placeholder:text-ink-600"
+            className="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-4 py-3 text-[15px] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
           />
           {error && <p className="text-sm text-red-300">{error}</p>}
           <button
             onClick={finishArchetype}
             disabled={finishing || !selected}
-            className="w-full rounded-2xl bg-gold-400 py-3.5 font-bold text-night-950 disabled:opacity-50"
+            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
           >
             {finishing ? "設定を保存中…" : "この内容で始める"}
           </button>
@@ -232,8 +232,8 @@ export default function Onboarding() {
   return (
     <main className="flex h-dvh flex-col px-4">
       <header className="px-1 pt-5 pb-1">
-        <p className="font-display text-[11px] tracking-[0.3em] text-gold-300">はじめの対話</p>
-        <h1 className="font-display text-lg text-ink-100">5年後の理想像を言葉にする</h1>
+        <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">はじめの対話</p>
+        <h1 className="text-lg font-semibold text-[var(--color-text-main)]">5年後の理想像を言葉にする</h1>
       </header>
 
       <Chat
@@ -251,7 +251,7 @@ export default function Onboarding() {
           <button
             onClick={finish}
             disabled={finishing}
-            className="w-full rounded-2xl bg-gold-400 py-3.5 font-bold text-night-950 disabled:opacity-50"
+            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
           >
             {finishing ? "理想像を記録しています…" : "設定を完了する"}
           </button>
