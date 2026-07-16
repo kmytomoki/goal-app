@@ -42,7 +42,7 @@ export default function TaskDetailSheet({
   return (
     <div className="fixed inset-0 z-40">
       <button className="absolute inset-0 bg-black/20" onClick={onClose} aria-label="閉じる" />
-      <section className="absolute right-0 bottom-0 left-0 z-10 rounded-t-2xl border border-[var(--color-line)] bg-[var(--color-bg-page)] p-4 shadow-lg">
+      <section className="absolute right-0 bottom-0 left-0 z-10 rounded-t-2xl border border-[var(--color-line)] bg-[var(--color-bg-page)] p-4 shadow-lg lg:top-1/2 lg:right-auto lg:bottom-auto lg:left-1/2 lg:w-full lg:max-w-xl lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl">
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
         <h2 className="text-base font-semibold text-[var(--color-text-main)]">タスク詳細</h2>
         <textarea

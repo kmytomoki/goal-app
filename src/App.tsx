@@ -47,9 +47,9 @@ export default function App() {
             <Route path="/upcoming" element={<Upcoming />} />
             <Route path="/weekly" element={<Weekly />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/morning" element={<Morning />} />
+            <Route path="/evening" element={<Evening />} />
           </Route>
-          <Route path="/morning" element={<Morning />} />
-          <Route path="/evening" element={<Evening />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </>
       )}

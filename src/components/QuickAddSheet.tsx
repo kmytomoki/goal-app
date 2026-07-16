@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, localDateKey } from "../lib/dates";
 
 interface QuickAddSheetProps {
@@ -26,9 +26,15 @@ export default function QuickAddSheet({ open, onClose, onSubmit, initialDate }: 
   const [priority, setPriority] = useState<1 | 2 | 3 | 4>(4);
   const [date, setDate] = useState(initialDate);
   const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const today = useMemo(() => localDateKey(), []);
   const tomorrow = useMemo(() => addDays(today, 1), [today]);
+
+  useEffect(() => {
+    if (!open) return;
+    inputRef.current?.focus();
+  }, [open]);
 
   if (!open) return null;
 
@@ -55,12 +61,19 @@ export default function QuickAddSheet({ open, onClose, onSubmit, initialDate }: 
         onClick={onClose}
         aria-label="閉じる"
       />
-      <section className="absolute right-0 bottom-0 left-0 z-10 rounded-t-2xl border border-[var(--color-line)] bg-[var(--color-bg-page)] p-4 shadow-lg">
+      <section className="absolute right-0 bottom-0 left-0 z-10 rounded-t-2xl border border-[var(--color-line)] bg-[var(--color-bg-page)] p-4 shadow-lg lg:top-1/2 lg:right-auto lg:bottom-auto lg:left-1/2 lg:w-full lg:max-w-xl lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl">
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
         <h2 className="text-base font-semibold text-[var(--color-text-main)]">クイック追加</h2>
         <textarea
+          ref={inputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              void submit();
+            }
+          }}
           placeholder="タスクを入力"
           rows={2}
           className="mt-3 w-full resize-none rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-main)]"

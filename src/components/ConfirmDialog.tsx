@@ -20,7 +20,7 @@ export default function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 lg:items-center">
       <section className="w-full max-w-md rounded-2xl border border-[var(--color-line)] bg-[var(--color-bg-page)] p-4 shadow-lg">
         <h3 className="text-base font-semibold text-[var(--color-text-main)]">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{description}</p>

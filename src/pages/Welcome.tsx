@@ -18,8 +18,8 @@ export default function Welcome() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-10">
-      <div className="rise pt-16">
+    <main className="mx-auto min-h-dvh w-full max-w-6xl px-6 py-10 lg:grid lg:grid-cols-[1fr_360px] lg:gap-12">
+      <div className="rise pt-16 lg:pt-10">
         <h1 className="mt-4 text-[34px] font-semibold leading-snug text-[var(--color-text-main)]">
           理想の自分を、
           <br />
@@ -46,7 +46,7 @@ export default function Welcome() {
         </ul>
       </div>
 
-      <div className="rise pb-4">
+      <div className="rise mt-10 h-fit rounded-2xl border border-[var(--color-line)] bg-[var(--color-bg-surface)] p-5 lg:mt-24">
         {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
         <button
           onClick={onStart}

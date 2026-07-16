@@ -213,116 +213,123 @@ export default function Evening() {
 
   if (log?.eveningDialogue?.completedAt) {
     return (
-      <main className="px-4">
+      <main className="px-4 lg:px-8">
+        <div className="mx-auto max-w-2xl">
         <PageHeader eyebrow="NIGHT" title="夜の振り返り" />
         <p className="card mt-6 px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           今日の振り返りは完了しています。おつかれさまでした。
         </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex h-dvh flex-col px-4">
-      <PageHeader eyebrow="NIGHT" title="今日を振り返る" />
+    <main className="px-4 pb-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <PageHeader eyebrow="NIGHT" title="今日を振り返る" />
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
+          <div className="flex min-h-[60vh] flex-col">
+            {log && log.tasks.length > 0 && (
+              <details className="mb-1 px-1" open={!log.tasks.some((t) => t.done)}>
+                <summary className="cursor-pointer py-1 text-xs text-[var(--color-text-secondary)]">
+                  できたものにチェックしてから話しましょう
+                </summary>
+                <div className="pt-2">
+                  <TaskList tasks={log.tasks} onToggle={toggleTask} />
+                </div>
+              </details>
+            )}
 
-      {log && log.tasks.length > 0 && (
-        <details className="mb-1 px-1" open={!log.tasks.some((t) => t.done)}>
-          <summary className="cursor-pointer py-1 text-xs text-[var(--color-text-secondary)]">
-            できたものにチェックしてから話しましょう
-          </summary>
-          <div className="pt-2">
-            <TaskList tasks={log.tasks} onToggle={toggleTask} />
-          </div>
-        </details>
-      )}
+            <Chat
+              mode="evening"
+              context={context}
+              messages={log?.eveningDialogue?.messages ?? []}
+              onMessagesChange={onMessagesChange}
+              aiStarts
+              disabled={finishing}
+            />
 
-      <Chat
-        mode="evening"
-        context={context}
-        messages={log?.eveningDialogue?.messages ?? []}
-        onMessagesChange={onMessagesChange}
-        aiStarts
-        disabled={finishing}
-      />
-
-      <section className="card mx-1 mb-2 p-3">
-        <p className="text-xs text-[var(--color-text-secondary)]">サッと終える（対話なし）</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {["よくできた", "まあまあ", "うまくいかなかった", "忙しくて手つかず"].map((mood) => (
-            <button
-              key={mood}
-              onClick={() => {
-                setQuickMood(mood);
-                void loadQuickCandidates(mood);
-              }}
-              className={`rounded-xl border px-2 py-2 text-xs ${
-                quickMood === mood
-                  ? "border-[var(--color-brand-500)]/60 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] text-[var(--color-brand-600)]"
-                  : "border-[var(--color-line)] bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]"
-              }`}
-            >
-              {mood}
-            </button>
-          ))}
-        </div>
-        <div className="mt-3 space-y-2">
-          <button
-            onClick={() => void loadQuickCandidates(quickMood)}
-            disabled={loadingQuick}
-            className="w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-2 text-xs text-[var(--color-brand-600)] disabled:opacity-50"
-          >
-            {loadingQuick ? "候補を作成中…" : "明日の最初の1タスク候補を作る"}
-          </button>
-          {quickCandidates.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {quickCandidates.map((candidate) => (
+            {userTurns >= 2 && (
+              <div className="px-1 pb-4">
+                {notice && (
+                  <p className="mb-2 rounded-xl border border-[var(--color-brand-500)]/30 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] px-3 py-2 text-sm text-[var(--color-brand-600)]">
+                    {notice}
+                  </p>
+                )}
                 <button
-                  key={candidate}
-                  onClick={() => setQuickFirstTask(candidate)}
-                  className={`rounded-full border px-3 py-1 text-xs ${
-                    quickFirstTask === candidate
+                  onClick={finish}
+                  disabled={finishing}
+                  className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
+                >
+                  {finishing ? "今日を記録しています…" : "振り返りを終える"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <section className="card mx-1 mt-3 h-fit p-3 lg:mx-0 lg:mt-0">
+            <p className="text-xs text-[var(--color-text-secondary)]">サッと終える（対話なし）</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {["よくできた", "まあまあ", "うまくいかなかった", "忙しくて手つかず"].map((mood) => (
+                <button
+                  key={mood}
+                  onClick={() => {
+                    setQuickMood(mood);
+                    void loadQuickCandidates(mood);
+                  }}
+                  className={`rounded-xl border px-2 py-2 text-xs ${
+                    quickMood === mood
                       ? "border-[var(--color-brand-500)]/60 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] text-[var(--color-brand-600)]"
                       : "border-[var(--color-line)] bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]"
                   }`}
                 >
-                  {candidate}
+                  {mood}
                 </button>
               ))}
             </div>
-          )}
-          <input
-            value={quickFirstTask}
-            onChange={(e) => setQuickFirstTask(e.target.value)}
-            placeholder="明日の最初の1タスク（自由入力可）"
-            className="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
-          />
-          <button
-            onClick={finishQuick}
-            disabled={finishing}
-            className="btn-primary w-full rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
-          >
-            サッと終える
-          </button>
+            <div className="mt-3 space-y-2">
+              <button
+                onClick={() => void loadQuickCandidates(quickMood)}
+                disabled={loadingQuick}
+                className="w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-2 text-xs text-[var(--color-brand-600)] disabled:opacity-50"
+              >
+                {loadingQuick ? "候補を作成中…" : "明日の最初の1タスク候補を作る"}
+              </button>
+              {quickCandidates.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {quickCandidates.map((candidate) => (
+                    <button
+                      key={candidate}
+                      onClick={() => setQuickFirstTask(candidate)}
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        quickFirstTask === candidate
+                          ? "border-[var(--color-brand-500)]/60 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] text-[var(--color-brand-600)]"
+                          : "border-[var(--color-line)] bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]"
+                      }`}
+                    >
+                      {candidate}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input
+                value={quickFirstTask}
+                onChange={(e) => setQuickFirstTask(e.target.value)}
+                placeholder="明日の最初の1タスク（自由入力可）"
+                className="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
+              />
+              <button
+                onClick={finishQuick}
+                disabled={finishing}
+                className="btn-primary w-full rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
+              >
+                サッと終える
+              </button>
+            </div>
+          </section>
         </div>
-      </section>
-
-      {userTurns >= 2 && (
-        <div className="px-1 pb-4">
-          {notice && (
-            <p className="mb-2 rounded-xl border border-[var(--color-brand-500)]/30 bg-[color-mix(in_srgb,var(--color-brand-500)_10%,white)] px-3 py-2 text-sm text-[var(--color-brand-600)]">
-              {notice}
-            </p>
-          )}
-          <button
-            onClick={finish}
-            disabled={finishing}
-            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
-          >
-            {finishing ? "今日を記録しています…" : "振り返りを終える"}
-          </button>
-        </div>
-      )}
+      </div>
     </main>
   );
 }

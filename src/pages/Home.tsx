@@ -175,163 +175,168 @@ export default function Home() {
   }
 
   return (
-    <main className="px-4 pb-12">
-      <header className="flex items-start justify-between px-1 pt-6">
-        <div>
-          <p className="text-xs text-[var(--color-text-faint)]">{dateLabel}</p>
-          <h1 className="mt-1 text-xl font-semibold text-[var(--color-text-main)]">
-            {ideal?.title ?? "理想の自分"}
-            <span className="ml-2 text-sm text-[var(--color-brand-500)]">Day {dayCount}</span>
-          </h1>
-          {profile?.triggerHabit && (
-            <p className="mt-1 text-xs text-[var(--color-text-faint)]">きっかけ: {profile.triggerHabit}</p>
-          )}
-        </div>
-      </header>
+    <main className="px-4 pb-12 lg:px-8 lg:pb-16">
+      <div className="mx-auto max-w-6xl">
+        <header className="flex items-start justify-between px-1 pt-6">
+          <div>
+            <p className="text-xs text-[var(--color-text-faint)]">{dateLabel}</p>
+            <h1 className="mt-1 text-xl font-semibold text-[var(--color-text-main)]">
+              {ideal?.title ?? "理想の自分"}
+              <span className="ml-2 text-sm text-[var(--color-brand-500)]">Day {dayCount}</span>
+            </h1>
+            {profile?.triggerHabit && (
+              <p className="mt-1 text-xs text-[var(--color-text-faint)]">きっかけ: {profile.triggerHabit}</p>
+            )}
+          </div>
+        </header>
 
-      {isRestDay ? (
-        <section className="highlight rise mt-6 rounded-2xl p-6 text-center">
-          <p className="text-base font-semibold text-[var(--color-brand-500)]">今日は休む日</p>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-            休むと伝えられたことも、続いている証拠です。
-            <br />
-            記録は途切れていません。また明日。
-          </p>
-        </section>
-      ) : (
-        <>
-          {/* 今日の最初の一歩 */}
-          {!morningDone && (
-            <section className="highlight rise mt-6 rounded-2xl p-5">
-              <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--color-brand-500)]">
-                今日の最初の一歩
-              </p>
-              {prevFirstTask ? (
-                <p className="mt-2 text-lg leading-snug text-[var(--color-text-main)]">{prevFirstTask}</p>
-              ) : (
+        <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+          <div>
+            {isRestDay ? (
+              <section className="highlight rise rounded-2xl p-6 text-center">
+                <p className="text-base font-semibold text-[var(--color-brand-500)]">今日は休む日</p>
                 <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                  朝の対話で、今日の最初の一歩を決めましょう。
+                  休むと伝えられたことも、続いている証拠です。
+                  <br />
+                  記録は途切れていません。また明日。
+                </p>
+              </section>
+            ) : (
+              <>
+                {!morningDone && (
+                  <section className="highlight rise rounded-2xl p-5">
+                    <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--color-brand-500)]">
+                      今日の最初の一歩
+                    </p>
+                    {prevFirstTask ? (
+                      <p className="mt-2 text-lg leading-snug text-[var(--color-text-main)]">{prevFirstTask}</p>
+                    ) : (
+                      <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                        朝の対話で、今日の最初の一歩を決めましょう。
+                      </p>
+                    )}
+                    <button
+                      onClick={quickStartToday}
+                      className="btn-primary mt-4 w-full rounded-xl py-3 font-bold"
+                      disabled={quickStarting}
+                    >
+                      {quickStarting ? "タスクを準備中…" : "タップで開始"}
+                    </button>
+                    <button
+                      onClick={() => navigate("/morning")}
+                      className="mt-2 w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-3 font-medium text-[var(--color-brand-600)]"
+                    >
+                      AIと話して決める
+                    </button>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={startBusyDay}
+                        className="flex-1 rounded-xl border border-[var(--color-line)] py-2.5 text-xs text-[var(--color-text-secondary)]"
+                      >
+                        今日は忙しい（5分だけ）
+                      </button>
+                      <button
+                        onClick={() => setShowRestConfirm(true)}
+                        className="flex-1 rounded-xl border border-[var(--color-line)] py-2.5 text-xs text-[var(--color-text-secondary)]"
+                      >
+                        今日は休む
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {(log?.tasks.length ?? 0) > 0 && (
+                  <section className={`${!morningDone ? "mt-6" : ""} rise`}>
+                    <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
+                      今日のタスク
+                    </h2>
+                    <TaskList
+                      tasks={log!.tasks}
+                      onToggle={eveningDone ? undefined : toggleTask}
+                      onEditText={eveningDone ? undefined : editTaskText}
+                      onDelete={eveningDone ? undefined : deleteTask}
+                      onOpenDetail={(task) => setDetailTask(task)}
+                      minimal={log!.mode === "minimal"}
+                    />
+                    {morningDone && !eveningDone && (
+                      <button
+                        onClick={() => navigate("/evening")}
+                        className="mt-4 w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-3 font-medium text-[var(--color-brand-600)]"
+                      >
+                        夜の振り返りをはじめる
+                      </button>
+                    )}
+                    {eveningDone && (
+                      <p className="card mt-4 px-4 py-3 text-center text-sm text-[var(--color-text-secondary)]">
+                        今日の記録は完了です。おつかれさまでした。
+                      </p>
+                    )}
+                  </section>
+                )}
+              </>
+            )}
+          </div>
+
+          <section className="rise mt-8 lg:mt-0">
+            <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
+              この7日間
+            </h2>
+            <div className="card p-4">
+              {log?.scores && (
+                <div
+                  className="mb-4 grid grid-cols-3 gap-2 text-center"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {(
+                    [
+                      ["一致度", log.scores.narikiri, "var(--color-series-narikiri)"],
+                      ["ペース", log.scores.pace, "var(--color-series-pace)"],
+                      ["やる気", log.scores.motivation, "var(--color-series-motivation)"],
+                    ] as const
+                  ).map(([label, value, color]) => (
+                    <button
+                      key={label}
+                      onClick={() =>
+                        setOpenReason((current) =>
+                          current ===
+                          (label === "一致度"
+                            ? "narikiri"
+                            : label === "ペース"
+                              ? "pace"
+                              : "motivation")
+                            ? null
+                            : label === "一致度"
+                              ? "narikiri"
+                              : label === "ペース"
+                                ? "pace"
+                                : "motivation",
+                        )
+                      }
+                      className="rounded-xl bg-[var(--color-bg-muted)] py-2.5 text-center"
+                    >
+                      <p className="text-[22px] font-bold text-[var(--color-text-main)]">{value}</p>
+                      <p className="mt-0.5 flex items-center justify-center gap-1 text-[11px] text-[var(--color-text-secondary)]">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+                        {label}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {log?.scores && openReason && (
+                <p className="mb-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                  {openReason === "narikiri"
+                    ? log.scores.narikiriReason ?? "今日の行動と理想像の一致度から算出。"
+                    : openReason === "pace"
+                      ? log.scores.paceReason ?? "タスク完了率から算出。"
+                      : log.scores.motivationReason ?? "達成状況と会話内容から算出。"}
                 </p>
               )}
-              <button
-                onClick={quickStartToday}
-                className="btn-primary mt-4 w-full rounded-xl py-3 font-bold"
-                disabled={quickStarting}
-              >
-                {quickStarting ? "タスクを準備中…" : "タップで開始"}
-              </button>
-              <button
-                onClick={() => navigate("/morning")}
-                className="mt-2 w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-3 font-medium text-[var(--color-brand-600)]"
-              >
-                AIと話して決める
-              </button>
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={startBusyDay}
-                  className="flex-1 rounded-xl border border-[var(--color-line)] py-2.5 text-xs text-[var(--color-text-secondary)]"
-                >
-                  今日は忙しい（5分だけ）
-                </button>
-                <button
-                  onClick={() => setShowRestConfirm(true)}
-                  className="flex-1 rounded-xl border border-[var(--color-line)] py-2.5 text-xs text-[var(--color-text-secondary)]"
-                >
-                  今日は休む
-                </button>
-              </div>
-            </section>
-          )}
-
-          {/* 今日のタスク */}
-          {(log?.tasks.length ?? 0) > 0 && (
-            <section className="rise mt-6">
-              <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
-                今日のタスク
-              </h2>
-              <TaskList
-                tasks={log!.tasks}
-                onToggle={eveningDone ? undefined : toggleTask}
-                onEditText={eveningDone ? undefined : editTaskText}
-                onDelete={eveningDone ? undefined : deleteTask}
-                onOpenDetail={(task) => setDetailTask(task)}
-                minimal={log!.mode === "minimal"}
-              />
-              {morningDone && !eveningDone && (
-                <button
-                  onClick={() => navigate("/evening")}
-                  className="mt-4 w-full rounded-xl border border-[var(--color-brand-500)]/40 bg-[var(--color-bg-page)] py-3 font-medium text-[var(--color-brand-600)]"
-                >
-                  夜の振り返りをはじめる
-                </button>
-              )}
-              {eveningDone && (
-                <p className="card mt-4 px-4 py-3 text-center text-sm text-[var(--color-text-secondary)]">
-                  今日の記録は完了です。おつかれさまでした。
-                </p>
-              )}
-            </section>
-          )}
-        </>
-      )}
-
-      {/* スコア */}
-      <section className="rise mt-8">
-        <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">この7日間</h2>
-        <div className="card p-4">
-          {log?.scores && (
-            <div
-              className="mb-4 grid grid-cols-3 gap-2 text-center"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {(
-                [
-                  ["一致度", log.scores.narikiri, "var(--color-series-narikiri)"],
-                  ["ペース", log.scores.pace, "var(--color-series-pace)"],
-                  ["やる気", log.scores.motivation, "var(--color-series-motivation)"],
-                ] as const
-              ).map(([label, value, color]) => (
-                <button
-                  key={label}
-                  onClick={() =>
-                    setOpenReason((current) =>
-                      current ===
-                      (label === "一致度"
-                        ? "narikiri"
-                        : label === "ペース"
-                          ? "pace"
-                          : "motivation")
-                        ? null
-                        : label === "一致度"
-                          ? "narikiri"
-                          : label === "ペース"
-                            ? "pace"
-                            : "motivation",
-                    )
-                  }
-                  className="rounded-xl bg-[var(--color-bg-muted)] py-2.5 text-center"
-                >
-                  <p className="text-[22px] font-bold text-[var(--color-text-main)]">{value}</p>
-                  <p className="mt-0.5 flex items-center justify-center gap-1 text-[11px] text-[var(--color-text-secondary)]">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
-                    {label}
-                  </p>
-                </button>
-              ))}
+              <ScoreChart days={days} />
             </div>
-          )}
-          {log?.scores && openReason && (
-            <p className="mb-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">
-              {openReason === "narikiri"
-                ? log.scores.narikiriReason ?? "今日の行動と理想像の一致度から算出。"
-                : openReason === "pace"
-                  ? log.scores.paceReason ?? "タスク完了率から算出。"
-                  : log.scores.motivationReason ?? "達成状況と会話内容から算出。"}
-            </p>
-          )}
-          <ScoreChart days={days} />
+          </section>
         </div>
-      </section>
+      </div>
 
       {deleted && (
         <div className="fixed right-4 bottom-24 left-4 z-30 mx-auto max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-page)] px-3 py-2 text-sm text-[var(--color-text-main)] shadow">

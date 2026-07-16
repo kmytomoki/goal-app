@@ -118,7 +118,7 @@ export default function Onboarding() {
 
   if (!draft.path) {
     return (
-      <main className="flex min-h-dvh flex-col px-5 py-10">
+      <main className="mx-auto min-h-dvh w-full max-w-6xl px-5 py-10">
         <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">次のステップ</p>
         <h1 className="mt-3 text-2xl font-semibold leading-snug text-[var(--color-text-main)]">
           はじめ方を選んでください
@@ -126,7 +126,7 @@ export default function Onboarding() {
         <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
           仮の設定で始めて、あとから設定で育てることもできます。
         </p>
-        <div className="mt-8 space-y-4">
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
           <button
             onClick={() => setDraft((d) => ({ ...d, path: "chat" }))}
             className="highlight w-full rounded-2xl p-5 text-left"
@@ -182,12 +182,12 @@ export default function Onboarding() {
     };
 
     return (
-      <main className="px-4 pb-10">
-        <header className="px-1 pt-5 pb-1">
+      <main className="mx-auto w-full max-w-5xl px-4 pb-10">
+        <header className="px-1 pt-5 pb-1 lg:max-w-2xl">
           <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">かんたん開始</p>
           <h1 className="text-lg font-semibold text-[var(--color-text-main)]">近い理想像を選ぶ</h1>
         </header>
-        <div className="mt-4 grid gap-3">
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {ARCHETYPES.map((item) => (
             <button
               key={item.id}
@@ -203,7 +203,7 @@ export default function Onboarding() {
             </button>
           ))}
         </div>
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-3 lg:max-w-2xl">
           <input
             value={draft.triggerHabit ?? ""}
             onChange={(e) => setDraft((d) => ({ ...d, triggerHabit: e.target.value }))}
@@ -230,33 +230,35 @@ export default function Onboarding() {
   }
 
   return (
-    <main className="flex h-dvh flex-col px-4">
-      <header className="px-1 pt-5 pb-1">
-        <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">はじめの対話</p>
-        <h1 className="text-lg font-semibold text-[var(--color-text-main)]">5年後の理想像を言葉にする</h1>
-      </header>
+    <main className="flex h-dvh flex-col px-4 lg:px-8">
+      <div className="mx-auto flex h-full w-full max-w-2xl flex-col">
+        <header className="px-1 pt-5 pb-1">
+          <p className="text-[11px] font-semibold tracking-[0.3em] text-[var(--color-brand-500)]">はじめの対話</p>
+          <h1 className="text-lg font-semibold text-[var(--color-text-main)]">5年後の理想像を言葉にする</h1>
+        </header>
 
-      <Chat
-        mode="onboarding"
-        context={{ aiStyle: "labeling" }}
-        messages={draft.messages}
-        onMessagesChange={(messages) => setDraft((d) => ({ ...d, messages }))}
-        aiStarts
-        disabled={finishing}
-      />
+        <Chat
+          mode="onboarding"
+          context={{ aiStyle: "labeling" }}
+          messages={draft.messages}
+          onMessagesChange={(messages) => setDraft((d) => ({ ...d, messages }))}
+          aiStarts
+          disabled={finishing}
+        />
 
-      {userTurns >= 2 && (
-        <div className="px-1 pb-4">
-          {error && <p className="mb-2 text-sm text-red-300">{error}</p>}
-          <button
-            onClick={finish}
-            disabled={finishing}
-            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
-          >
-            {finishing ? "理想像を記録しています…" : "設定を完了する"}
-          </button>
-        </div>
-      )}
+        {userTurns >= 2 && (
+          <div className="px-1 pb-4">
+            {error && <p className="mb-2 text-sm text-red-300">{error}</p>}
+            <button
+              onClick={finish}
+              disabled={finishing}
+              className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
+            >
+              {finishing ? "理想像を記録しています…" : "設定を完了する"}
+            </button>
+          </div>
+        )}
+      </div>
     </main>
   );
 }

@@ -62,7 +62,7 @@ export default function TaskList({
                   return;
                 }
               }}
-              className={`flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left transition-all select-none ${
+              className={`group flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left transition-all select-none lg:hover:bg-[var(--color-bg-muted)] ${
                 task.isFirstTask ? "highlight rounded-xl" : "card"
               } ${swipedId === task.id ? "scale-[0.99]" : ""}`}
             >
@@ -129,19 +129,20 @@ export default function TaskList({
               </span>
               <span className="flex gap-1">
                 <span
-                  className="mt-1 inline-block h-2 w-2 rounded-full"
+                  className="mt-1 inline-block h-2 w-2 rounded-full transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
                   style={{ background: priorityColor(task.priority) }}
                 />
                 {onOpenDetail && (
-                  <span
+                  <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onOpenDetail(task);
                     }}
-                    className="text-xs text-[var(--color-text-secondary)]"
+                    className="text-xs text-[var(--color-text-secondary)] transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
                   >
                     詳細
-                  </span>
+                  </button>
                 )}
               </span>
             </div>

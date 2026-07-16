@@ -137,43 +137,47 @@ export default function Morning() {
 
   if (log?.morningDialogue?.completedAt) {
     return (
-      <main className="px-4">
+      <main className="px-4 lg:px-8">
+        <div className="mx-auto max-w-2xl">
         <PageHeader eyebrow="MORNING" title="朝の対話" />
         <p className="card mt-6 px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           今日の朝の対話は完了しています。
         </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex h-dvh flex-col px-4">
-      <PageHeader
-        eyebrow={minimal ? "MORNING ・ 5分だけモード" : "MORNING"}
-        title={minimal ? "最初の一歩だけ決める" : "今日をどう進めるか"}
-      />
+    <main className="flex h-dvh flex-col px-4 lg:px-8">
+      <div className="mx-auto flex h-full w-full max-w-2xl flex-col">
+        <PageHeader
+          eyebrow={minimal ? "MORNING ・ 5分だけモード" : "MORNING"}
+          title={minimal ? "最初の一歩だけ決める" : "今日をどう進めるか"}
+        />
 
-      <Chat
-        mode="morning"
-        context={context}
-        messages={log?.morningDialogue?.messages ?? []}
-        onMessagesChange={onMessagesChange}
-        aiStarts
-        disabled={finishing}
-      />
+        <Chat
+          mode="morning"
+          context={context}
+          messages={log?.morningDialogue?.messages ?? []}
+          onMessagesChange={onMessagesChange}
+          aiStarts
+          disabled={finishing}
+        />
 
-      {userTurns >= (minimal ? 1 : 2) && (
-        <div className="px-1 pb-4">
-          {error && <p className="mb-2 text-sm text-red-300">{error}</p>}
-          <button
-            onClick={finish}
-            disabled={finishing}
-            className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
-          >
-            {finishing ? "チェックリストを作成中…" : "今日のタスクを作る"}
-          </button>
+        {userTurns >= (minimal ? 1 : 2) && (
+          <div className="px-1 pb-4">
+            {error && <p className="mb-2 text-sm text-red-300">{error}</p>}
+            <button
+              onClick={finish}
+              disabled={finishing}
+              className="btn-primary w-full rounded-2xl py-3.5 font-bold disabled:opacity-50"
+            >
+              {finishing ? "チェックリストを作成中…" : "今日のタスクを作る"}
+            </button>
+          </div>
+        )}
         </div>
-      )}
     </main>
   );
 }

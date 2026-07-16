@@ -47,19 +47,19 @@ export default function Upcoming() {
   };
 
   return (
-    <main className="px-4 pb-24">
-      <header className="px-1 pt-6">
+    <main className="px-4 pb-24 lg:px-8 lg:pb-16">
+      <header className="mx-auto max-w-6xl px-1 pt-6">
         <p className="text-xs font-semibold tracking-wide text-[var(--color-text-secondary)]">UPCOMING</p>
         <h1 className="mt-1 text-xl font-semibold text-[var(--color-text-main)]">予定</h1>
       </header>
-      <div className="mt-4 space-y-5">
+      <div className="mx-auto mt-4 max-w-6xl space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0 xl:grid-cols-3">
         {logs.length === 0 ? (
-          <p className="card px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
+          <p className="card px-4 py-6 text-center text-sm text-[var(--color-text-secondary)] lg:col-span-2 xl:col-span-3">
             予定されたタスクはありません。右下の + から追加できます。
           </p>
         ) : (
           logs.map((entry) => (
-            <section key={entry.date}>
+            <section key={entry.date} className="card p-3">
               <h2 className="mb-2 px-1 text-xs font-semibold text-[var(--color-text-secondary)]">{entry.date}</h2>
               <TaskList
                 tasks={entry.tasks}

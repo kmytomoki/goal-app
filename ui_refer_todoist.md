@@ -1,101 +1,81 @@
----
-name: Todoist風UI改善計画
-overview: goal-app(ステージ)のUIを、Todoistを参考に「明るくクリーンなビジュアル」「ボトムタブ+クイック追加のナビゲーション」「優先度・期限つきのタスク管理UX」へ段階的に刷新する。
-todos:
-  - id: theme-tokens
-    content: index.css / index.html をTodoist風ライトテーマのトークンに全面差し替え
-    status: completed
-  - id: theme-sweep
-    content: 全ページ・コンポーネントの旧トークン(night/gold/ink/font-display)を新トークンへ置換
-    status: completed
-  - id: app-shell
-    content: AppShell(ボトムタブバー+FAB)を新設しルーティングを再構成
-    status: completed
-  - id: quick-add
-    content: QuickAddSheet(ボトムシート型クイック追加)を実装
-    status: completed
-  - id: task-item
-    content: "TaskItem再設計: 丸チェックアニメーション・インライン編集・スワイプ操作・Undoトースト"
-    status: completed
-  - id: confirm-dialog
-    content: window.confirmを共通確認ダイアログに置換
-    status: completed
-  - id: task-model
-    content: Task型にid/priorityを追加し読み込み時デフォルト補完を実装
-    status: completed
-  - id: upcoming-view
-    content: 「予定」タブ(/upcoming)と日付指定付きタスク追加を実装
-    status: completed
-  - id: task-detail
-    content: タスク詳細ボトムシート(編集・優先度・日付移動・削除)を実装
-    status: completed
-isProject: false
----
+# Todoist PC版参考 — ワイド画面UI再設計計画
 
-# Todoist風UI改善計画
+前回のモバイル向け改修（ライトテーマ / ボトムタブ + FAB / ボトムシート / Task拡張）は実装済み。
+本計画はそれを土台に、**Todoist PC版（デスクトップWebアプリ）を参考へ切り替え、画面幅を広く使うレイアウト**に再設計する。
+モバイル表示は現状のUI（ボトムタブ + ボトムシート）を維持し、`lg`（1024px）以上でデスクトップレイアウトへ切り替えるレスポンシブ構成とする。
 
-## 現状の把握
+## Todoist PC版から取り入れるレイアウト要素
 
-- React 19 + Vite + Tailwind v4、コンポーネントライブラリなし、モバイル1カラム(`max-w-md`)構成。
-- テーマはダーク×ゴールドの「舞台」テーマ([src/index.css](goal-app/src/index.css))。ライトモードなし。
-- ナビはHomeからのリンクのみ(サイドバー・タブバーなし)。モーダルは `window.confirm` のみ。
-- タスクは `DailyLog.tasks` に埋め込まれた `Task { text, done, isFirstTask }`([src/lib/types.ts](goal-app/src/lib/types.ts))。ID・優先度・期限・プロジェクトなし。手動追加UIもなし(AI対話 or クイックスタートで生成)。
+- 左固定サイドバー（約280px）: 上部に「+ タスクを追加」、その下にビュー切替（今日 / 予定 / …）
+- メインエリア: サイドバーの右側に広がり、コンテンツは中央寄せ（リスト系は最大 ~800px、複数カラムはそれ以上）
+- クイック追加・タスク詳細は**画面中央のモーダルダイアログ**（モバイルのボトムシートに相当）
+- ホバーで操作アイコンが現れるタスク行、キーボードショートカット（`q` でクイック追加）
 
-AI対話(朝・夜)というアプリの核は維持し、その周囲のタスク表示・操作・ナビゲーションをTodoist流に置き換える方針。
+## 現状の制約（変更対象）
 
-## フェーズ1: ビジュアル刷新(ライト×クリーンなテーマ)
+- [src/components/AppShell.tsx](src/components/AppShell.tsx): シェル全体が `max-w-md`（448px）に固定。ボトムタブ + FAB のみ
+- [src/App.tsx](src/App.tsx): `Morning` / `Evening` は AppShell 外のためサイドバーなし
+- [src/components/QuickAddSheet.tsx](src/components/QuickAddSheet.tsx) / [src/components/TaskDetailSheet.tsx](src/components/TaskDetailSheet.tsx) / [src/components/ConfirmDialog.tsx](src/components/ConfirmDialog.tsx): 常にボトムシート/下寄せ表示
+- 各ページ（Home / Upcoming / Weekly / Settings）: 1カラム前提の余白設計
 
-[src/index.css](goal-app/src/index.css) の `@theme` トークンをTodoist風に全面差し替え:
+## フェーズA: AppShellのレスポンシブ再構成（サイドバー化）
 
-- 背景: 白 `#ffffff` / サーフェス `#fafafa`、テキスト `#202020` / セカンダリ `#808080`、ヘアライン `#eeeeee`
-- アクセント: Todoist系の赤 `#dc4c3e`(ブランド・主要ボタン・FAB)
-- 優先度カラー: P1 `#d1453b` / P2 `#eb8909` / P3 `#246fe0` / P4 グレー(フェーズ4で使用)
-- フォント: 明朝(Shippori Mincho)の見出しをやめ、Zen Kaku Gothic New に統一。[index.html](goal-app/index.html) のフォント読み込みと `theme-color` を更新
-- `.spotlight` は「最初の一歩」の識別子として、赤アクセントの薄い背景+左ボーダーのカードに再定義
+[src/components/AppShell.tsx](src/components/AppShell.tsx) を2レイアウト対応にする:
 
-全ページ(`Home` / `Morning` / `Evening` / `Weekly` / `Settings` / `Welcome` / `Onboarding` / `Chat` / `PageHeader` / `ScoreChart` / `App.tsx`)の `night-*` / `gold-*` / `ink-*` / `font-display` クラスを新トークンへ一括で置き換える。文言の演劇メタファー(「今日の演目」等)は変更しない。
+- `lg` 以上: 左に固定サイドバーを表示
+  - 上段: 理想像タイトル + Day N（`useApp()` の `ideal` / `profile` から取得）
+  - 「+ タスクを追加」ボタン（Todoistと同じ赤アイコン + テキスト。クリックでクイック追加モーダル）
+  - ナビ: 今日（`/`）/ 予定（`/upcoming`）/ 振り返り（`/weekly`）/ 設定（`/settings`）。アクティブ項目は薄い赤背景（Todoistの選択状態）
+- `lg` 未満: 現行のボトムタブ + FAB をそのまま維持（`lg:hidden`）
+- ルートの `max-w-md` を撤廃し、`lg` では `flex`（サイドバー + メイン）、メイン側に `min-w-0 flex-1` を設定
+- メイン内コンテンツ幅は各ページ側で制御（下記フェーズB）
+- `Morning` / `Evening` も AppShell 配下へ移動し（[src/App.tsx](src/App.tsx) のルート再編）、デスクトップではサイドバーを常時表示。モバイルでは現行どおりボトムタブ非表示のフロー画面のままにする（`showBottomNav` の判定は既存ロジックを流用）
+- キーボードショートカット: `q` でクイック追加を開く、`Escape` で閉じる（AppShellの `keydown` リスナーで実装）
 
-## フェーズ2: ナビゲーション(ボトムタブ + クイック追加FAB)
+## フェーズB: 各ページのワイドレイアウト
 
-新規 `src/components/AppShell.tsx` を作り、オンボーディング済みルートを包む:
+すべて既存ページの responsive クラス追加が中心。ロジック変更なし。
 
-- ボトムタブバー: 「今日」(`/`) / 「予定」(`/upcoming`、フェーズ4で実装。それまでは非表示) / 「振り返り」(`/weekly`) / 「設定」(`/settings`)
-- 右下に赤い「+」FAB → クイック追加シート(フェーズ3)を開く
-- [src/App.tsx](goal-app/src/App.tsx) のルート定義をAppShell配下に移動し、`PageHeader` の戻るナビはMorning/Eveningなどタブ外のフローだけに残す
-- [src/pages/Home.tsx](goal-app/src/pages/Home.tsx) 末尾の「週次振り返り」リンクと設定ギアはタブに吸収して削除
+- [src/pages/Home.tsx](src/pages/Home.tsx)（今日）
+  - `lg`: 2カラムグリッド（`lg:grid lg:grid-cols-[1fr_360px] lg:gap-8 lg:max-w-5xl`）
+  - 左カラム: ヘッダー + 「今日の最初の一歩」スポットライト + 今日の演目（タスクリスト）
+  - 右カラム: スコア3指標 + 7日間チャート（サイドパネル化）
+- [src/pages/Upcoming.tsx](src/pages/Upcoming.tsx)(予定)
+  - `lg`: 日付セクションを複数カラムのボード風グリッドに（`lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 lg:items-start lg:max-w-6xl`）。Todoist PC版の「今後」ボードレイアウトに相当
+  - モバイルは現行の縦積みリストのまま
+- [src/pages/Morning.tsx](src/pages/Morning.tsx) / [src/pages/Evening.tsx](src/pages/Evening.tsx)（AI対話）
+  - チャットカラムを `lg:max-w-2xl lg:mx-auto` で中央寄せし、行長を読みやすく保つ
+  - Evening の「サッと終える」セクションは `lg` でチャット右横のサイドパネル（`lg:grid-cols-[1fr_320px]`）に移動
+- [src/pages/Weekly.tsx](src/pages/Weekly.tsx) / [src/pages/Settings.tsx](src/pages/Settings.tsx)
+  - `lg:max-w-2xl lg:mx-auto` の中央寄せ。Weekly の統計カードとAIレビューカードは `lg:grid-cols-2` で並べる
+- [src/pages/Welcome.tsx](src/pages/Welcome.tsx) / [src/pages/Onboarding.tsx](src/pages/Onboarding.tsx)
+  - Welcome: `lg` で左右2カラムのヒーロー（左=コピー、右=開始ボタンカード）
+  - Onboarding のアーキタイプ一覧: `lg:grid-cols-2` のカードグリッド
 
-## フェーズ3: タスク操作UX(Todoistの操作感)
+## フェーズC: シート類のモーダル化（デスクトップ）
 
-- 新規 `src/components/QuickAddSheet.tsx`: 画面下からスライドするボトムシート。テキスト入力+「最初の一歩にする」トグル(+フェーズ4で優先度・日付チップ)。保存で当日の `DailyLog.tasks` に追記
-- [src/components/TaskList.tsx](goal-app/src/components/TaskList.tsx) を `TaskItem` ベースに再設計:
-  - Todoist風の丸チェックボックス(優先度色のアウトライン、タップでフィル+チェックのアニメーション、完了時に打ち消し線がスッと入る)
-  - テキスト部タップでインライン編集(input化してblur/Enterで保存)
-  - 右スワイプで完了、左スワイプで削除(ポインタイベントで実装、ライブラリ追加なし)
-  - 削除時は下部トーストで「元に戻す」(数秒間)
-- 休演日の `window.confirm` を共通の確認ボトムシート/ダイアログに置き換え
-- タスク配列操作(追加・編集・削除・トグル)は `Home.tsx` 内のロジックを `src/lib/tasks.ts` に切り出し、`saveDailyLog` 経由で保存
+3コンポーネント共通で「モバイル=ボトムシート / デスクトップ=中央モーダル」に切り替える。CSSクラスの出し分けのみで対応:
 
-## フェーズ4: タスク管理機能の拡張(データモデル変更)
+- [src/components/QuickAddSheet.tsx](src/components/QuickAddSheet.tsx): `lg` では画面中央 `max-w-xl` の角丸ダイアログ（Todoistのクイック追加ウィンドウ相当）。開いたら入力に自動フォーカス、`Enter`（IME確定除く）で追加
+- [src/components/TaskDetailSheet.tsx](src/components/TaskDetailSheet.tsx): 同様に中央 `max-w-xl` モーダル化
+- [src/components/ConfirmDialog.tsx](src/components/ConfirmDialog.tsx): 既に `items-end` の下寄せなので `lg:items-center` を追加するだけ
+- 共通の配置クラス（例: `sheet-or-modal`）を [src/index.css](src/index.css) に定義して重複を避けてもよい（任意）
 
-`Task` を拡張(既存データは読み込み時にデフォルト補完し、後方互換を維持):
+## フェーズD: デスクトップ操作性（ホバー / ポインタ前提のUX）
 
-```ts
-interface Task {
-  id: string;          // 新規: crypto.randomUUID()
-  text: string;
-  done: boolean;
-  isFirstTask: boolean;
-  priority?: 1 | 2 | 3 | 4;  // 新規: 既定4
-}
-```
+[src/components/TaskList.tsx](src/components/TaskList.tsx) の調整:
 
-- タスクの置き場所は引き続き `DailyLog.tasks`(日付=期限)とし、**将来日付の `DailyLog` にタスクを書けるようにする**ことで期限・予定を表現する。トップレベルの tasks コレクションへの移行は行わない(AI対話が日次ログ前提のため)
-- 「予定」タブ(`/upcoming`): 今日以降のログを `getRecentLogs` 相当の範囲クエリで取得し、日付セクション付きリストで表示。クイック追加シートに日付チップ(今日/明日/日付選択)を追加
-- 優先度: クイック追加とタスク詳細で P1〜P4 を選択、チェックボックスの色に反映
-- タスク詳細ボトムシート: タスクタップ長押し or 詳細アイコンで表示。テキスト・優先度・日付(移動)・削除を編集
-- プロジェクト機能はこのアプリでは「理想の自分×日次」構造と競合するため導入しない(習慣タグ的な軽いラベルが欲しくなったら別途検討)
-- AI生成側([functions/src](goal-app/functions/src))はタスクを`text`のみで返す現状を維持し、クライアント側で `id`/`priority` を補完する
+- 「詳細」テキストと優先度ドットは、`lg` ではホバー時のみ表示（`lg:opacity-0 lg:group-hover:opacity-100`、行に `group` を付与）。Todoistの行ホバーで編集アイコンが出る挙動に相当
+- スワイプ操作（右=完了 / 左=削除）はタッチ環境専用の位置づけとし、デスクトップではチェックボックスクリック + ホバーアイコンを主動線にする（ポインタイベント実装は共通なので変更不要）
+- タスク行の背景ホバー（`lg:hover:bg-[var(--color-bg-muted)]`）を追加
+- Undoトースト・チェックアニメーションは共通のまま
 
-## 進め方
+## 実施順序と検証
 
-フェーズ1→2→3→4の順で、各フェーズ完了ごとに `npm run dev` で動作確認しながら進める。1〜3はUI層のみの変更、4のみ型とFirestoreの書き込み内容に影響する(読み込み時デフォルト補完のためマイグレーション不要)。
+1. フェーズA（AppShell + ルート再編）→ `npm run dev` をブラウザ幅1280pxで確認
+2. フェーズB（ページ別レイアウト）→ 今日 / 予定 / 対話 / 振り返り / 設定を順に確認
+3. フェーズC(モーダル化) → クイック追加・詳細・確認の3つをデスクトップ/モバイル両幅で確認
+4. フェーズD（ホバーUX）→ マウス操作での一連のタスク操作を確認
+
+- データモデル・Firestore・AI関数への変更は**なし**（純粋にUI層のみ）
+- モバイル表示のリグレッションがないこと（375px幅）を各フェーズで確認する
