@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "emulators": "cross-env FUNCTIONS_DISCOVERY_TIMEOUT=120 firebase emulators:start --project demo-goal-app",
-    "functions:build": "npm --prefix functions run build"
+    "functions:build": "npm --prefix functions run build",
+    "deploy:functions": "cross-env FUNCTIONS_DISCOVERY_TIMEOUT=180 firebase deploy --only functions --project gaal-app"
   },
   "dependencies": {
     "firebase": "^12.15.0",

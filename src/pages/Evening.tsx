@@ -224,7 +224,7 @@ export default function Evening() {
 
   return (
     <main className="flex h-dvh flex-col px-4">
-      <PageHeader eyebrow="NIGHT" title="今日の幕を下ろす" />
+      <PageHeader eyebrow="NIGHT" title="今日を振り返る" />
 
       {log && log.tasks.length > 0 && (
         <details className="mb-1 px-1" open={!log.tasks.some((t) => t.done)}>

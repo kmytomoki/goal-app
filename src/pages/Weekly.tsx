@@ -83,7 +83,7 @@ export default function Weekly() {
 
   return (
     <main className="px-4 pb-12">
-      <PageHeader eyebrow="WEEKLY ・ マネージャー時間" title="今週の楽屋ミーティング" />
+      <PageHeader eyebrow="WEEKLY" title="今週の振り返り" />
       <p className="px-1 text-xs leading-relaxed text-[var(--color-text-faint)]">
         計画の見直しはここでだけ。日々の対話は実行に集中するための場所です。
       </p>
@@ -104,7 +104,7 @@ export default function Weekly() {
 
       {review ? (
         <section className="rise mt-6 space-y-4">
-          <div className="spotlight rounded-2xl p-5">
+          <div className="highlight rounded-2xl p-5">
             <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--color-brand-500)]">AIの観察</p>
             <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-text-main)]">{review.summary}</p>
           </div>

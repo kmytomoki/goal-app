@@ -7,7 +7,7 @@ export interface DayScore {
 }
 
 const SERIES = [
-  { key: "narikiri", label: "なりきり", color: "var(--color-series-narikiri)" },
+  { key: "narikiri", label: "一致度", color: "var(--color-series-narikiri)" },
   { key: "pace", label: "ペース", color: "var(--color-series-pace)" },
   { key: "motivation", label: "やる気", color: "var(--color-series-motivation)" },
 ] as const;
@@ -153,7 +153,7 @@ export default function ScoreChart({ days }: { days: DayScore[] }) {
           >
             {sel
               ? sel.scores
-                ? `${Number(sel.date.slice(5, 7))}/${Number(sel.date.slice(8, 10))}　なりきり ${sel.scores.narikiri} ・ ペース ${sel.scores.pace} ・ やる気 ${sel.scores.motivation}`
+                ? `${Number(sel.date.slice(5, 7))}/${Number(sel.date.slice(8, 10))}　一致度 ${sel.scores.narikiri} ・ ペース ${sel.scores.pace} ・ やる気 ${sel.scores.motivation}`
                 : `${Number(sel.date.slice(5, 7))}/${Number(sel.date.slice(8, 10))}　記録なし`
               : "点をタップすると値を表示"}
           </p>

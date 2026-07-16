@@ -169,7 +169,7 @@ export default function Home() {
   if (loading) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p className="text-sm font-semibold tracking-widest text-[var(--color-text-secondary)]">今日の舞台を準備中…</p>
+        <p className="text-sm font-semibold tracking-widest text-[var(--color-text-secondary)]">読み込み中…</p>
       </main>
     );
   }
@@ -190,8 +190,8 @@ export default function Home() {
       </header>
 
       {isRestDay ? (
-        <section className="spotlight rise mt-6 rounded-2xl p-6 text-center">
-          <p className="text-base font-semibold text-[var(--color-brand-500)]">今日は休演日</p>
+        <section className="highlight rise mt-6 rounded-2xl p-6 text-center">
+          <p className="text-base font-semibold text-[var(--color-brand-500)]">今日は休む日</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
             休むと伝えられたことも、続いている証拠です。
             <br />
@@ -200,9 +200,9 @@ export default function Home() {
         </section>
       ) : (
         <>
-          {/* 今日の最初の一歩（スポットライト） */}
+          {/* 今日の最初の一歩 */}
           {!morningDone && (
-            <section className="spotlight rise mt-6 rounded-2xl p-5">
+            <section className="highlight rise mt-6 rounded-2xl p-5">
               <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--color-brand-500)]">
                 今日の最初の一歩
               </p>
@@ -247,7 +247,7 @@ export default function Home() {
           {(log?.tasks.length ?? 0) > 0 && (
             <section className="rise mt-6">
               <h2 className="px-1 pb-2 text-sm font-semibold tracking-wide text-[var(--color-text-secondary)]">
-                今日の演目
+                今日のタスク
               </h2>
               <TaskList
                 tasks={log!.tasks}
@@ -267,7 +267,7 @@ export default function Home() {
               )}
               {eveningDone && (
                 <p className="card mt-4 px-4 py-3 text-center text-sm text-[var(--color-text-secondary)]">
-                  今日の幕は下りました。おつかれさまでした。
+                  今日の記録は完了です。おつかれさまでした。
                 </p>
               )}
             </section>
@@ -286,7 +286,7 @@ export default function Home() {
             >
               {(
                 [
-                  ["なりきり", log.scores.narikiri, "var(--color-series-narikiri)"],
+                  ["一致度", log.scores.narikiri, "var(--color-series-narikiri)"],
                   ["ペース", log.scores.pace, "var(--color-series-pace)"],
                   ["やる気", log.scores.motivation, "var(--color-series-motivation)"],
                 ] as const
@@ -296,13 +296,13 @@ export default function Home() {
                   onClick={() =>
                     setOpenReason((current) =>
                       current ===
-                      (label === "なりきり"
+                      (label === "一致度"
                         ? "narikiri"
                         : label === "ペース"
                           ? "pace"
                           : "motivation")
                         ? null
-                        : label === "なりきり"
+                        : label === "一致度"
                           ? "narikiri"
                           : label === "ペース"
                             ? "pace"

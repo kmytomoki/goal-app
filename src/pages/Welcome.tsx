@@ -20,7 +20,6 @@ export default function Welcome() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-10">
       <div className="rise pt-16">
-        <p className="text-xs font-semibold tracking-[0.35em] text-[var(--color-brand-500)]">STAGE</p>
         <h1 className="mt-4 text-[34px] font-semibold leading-snug text-[var(--color-text-main)]">
           理想の自分を、
           <br />
@@ -41,7 +40,7 @@ export default function Welcome() {
             <span>会話で振り返るだけ。フォーム入力はゼロ。</span>
           </li>
           <li className="flex gap-3">
-            <span className="font-semibold text-[var(--color-brand-500)]">灯</span>
+            <span className="font-semibold text-[var(--color-brand-500)]">休</span>
             <span>忙しい日は5分だけでいい。休んだ日も、記録は途切れない。</span>
           </li>
         </ul>

@@ -212,8 +212,8 @@ JSONのみを返す。`,
       const pace = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
       const ai = (await runStructured(
         MODEL_LIGHT,
-        `夜の振り返り会話と実績から「なりきり度」「モチベーション」を算出し、会話で決まった「明日の最初の1タスク」を抽出する。
-- narikiri（なりきり度）: 今日の行動が理想像の習慣（${habits.join(" / ") || "未設定"}）とどれだけ一致していたか。
+        `夜の振り返り会話と実績から「理想との一致度」「モチベーション」を算出し、会話で決まった「明日の最初の1タスク」を抽出する。
+- narikiri（理想との一致度）: 今日の行動が理想像の習慣（${habits.join(" / ") || "未設定"}）とどれだけ一致していたか。
 - motivation（モチベーション）: タスク達成度を主基準に、会話の前向きさを加味する。
 - tomorrowFirstTask: 会話で決まった明日の最初の1タスク（量ベース・完了条件つき）。決まっていなければ空文字。
 - narikiriReason / motivationReason: それぞれの根拠を1文で書く。
@@ -299,7 +299,7 @@ JSONのみを返す。`,
           (d) =>
             `${d.date}: ${d.taskCount}タスク中${d.doneCount}完了` +
             (d.mode && d.mode !== "normal" ? `（${d.mode === "checkin_only" ? "チェックインのみ" : "5分だけモード"}）` : "") +
-            (d.scores ? ` なりきり${d.scores.narikiri}/ペース${d.scores.pace}/やる気${d.scores.motivation}` : ""),
+            (d.scores ? ` 一致度${d.scores.narikiri}/ペース${d.scores.pace}/やる気${d.scores.motivation}` : ""),
         )
         .join("\n");
       return runStructured(

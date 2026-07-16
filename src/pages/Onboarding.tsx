@@ -129,7 +129,7 @@ export default function Onboarding() {
         <div className="mt-8 space-y-4">
           <button
             onClick={() => setDraft((d) => ({ ...d, path: "chat" }))}
-            className="spotlight w-full rounded-2xl p-5 text-left"
+            className="highlight w-full rounded-2xl p-5 text-left"
           >
             <p className="text-base font-semibold text-[var(--color-brand-500)]">対話で決める</p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
@@ -142,7 +142,7 @@ export default function Onboarding() {
           >
             <p className="text-base font-semibold text-[var(--color-text-main)]">タップで決める（仮でOK）</p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-              近いアーキタイプを選んで、すぐ開始できます。
+              近いタイプを選んで、すぐ開始できます。
             </p>
           </button>
         </div>

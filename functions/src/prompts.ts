@@ -97,13 +97,13 @@ ${COMMON_RULES}
 function morningPrompt(ctx: ChatContext): string {
   const stage = ctx.woopStage ?? "wo";
   const stageRules: Record<WoopStage, string> = {
-    wo: `今日のWOOPステージ: Wish + Outcome の2問のみ（習慣化を最優先する時期）。
+    wo: `今日のWOOP段階: Wish + Outcome の2問のみ（習慣化を最優先する時期）。
 1問目: 今日の願い（Wish）「今日、${ctx.idealSelf?.title ?? "理想の自分"}として一番やりたいことは？」
 2問目: 結果（Outcome）「それができたら今日の終わりにどんな気分になれそう？」
 この2問が終わったらタスク提案に進む。ObstacleとPlanは聞かない。`,
-    woo: `今日のWOOPステージ: Wish + Outcome + Obstacle の3問。
+    woo: `今日のWOOP段階: Wish + Outcome + Obstacle の3問。
 Wish・Outcomeに加えて「今日それを邪魔しそうなものは何？」（Obstacle）を聞く。Planは聞かない。`,
-    woop: `今日のWOOPステージ: フルWOOP（Wish / Outcome / Obstacle / Plan）。
+    woop: `今日のWOOP段階: フルWOOP（Wish / Outcome / Obstacle / Plan）。
 Obstacleまで聞いたら「その邪魔が来たら、どうする？」とif-then形式のPlanを1つ決めさせる。`,
   };
 

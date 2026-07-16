@@ -34,7 +34,7 @@ export interface Task {
 }
 
 export interface Scores {
-  narikiri: number; // なりきり度 0-100
+  narikiri: number; // 理想との一致度 0-100
   pace: number; // 達成ペース 0-100
   motivation: number; // モチベーション 0-100
   narikiriReason?: string;

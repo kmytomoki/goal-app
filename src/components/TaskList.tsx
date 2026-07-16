@@ -63,7 +63,7 @@ export default function TaskList({
                 }
               }}
               className={`flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left transition-all select-none ${
-                task.isFirstTask ? "spotlight rounded-xl" : "card"
+                task.isFirstTask ? "highlight rounded-xl" : "card"
               } ${swipedId === task.id ? "scale-[0.99]" : ""}`}
             >
               <button

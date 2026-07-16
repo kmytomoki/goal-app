@@ -42,7 +42,7 @@ npm run dev         # Vite (5173)。.env.local の VITE_USE_FIREBASE_EMULATOR=tr
 3. TaskItem: 丸チェックのタップでトグル / 右スワイプ完了 / 左スワイプ削除+Undo トースト / テキストタップでインライン編集
 4. 「詳細」→ TaskDetailSheet(優先度・日付移動・削除)
 5. 予定タブ(/upcoming)に日付セクション表示、日付移動したタスクが現れる
-6. 「今日は休む」→ ConfirmDialog → 休演日表示
+6. 「今日は休む」→ ConfirmDialog →「今日は休む日」表示
 
 ## AI 対話(chat / assist)の検証
 
