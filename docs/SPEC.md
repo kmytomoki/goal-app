@@ -49,14 +49,19 @@
 
 | 区分 | 採用 |
 | --- | --- |
-| フロントエンド | Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 |
-| バックエンド | Firebase (Firestore, Authentication) |
-| AI | Anthropic API (Claude) |
-| ホスティング想定 | Vercel |
+| フロントエンド | React 19 (Vite) + TypeScript + Tailwind CSS v4 |
+| バックエンド | Firebase (Firestore, Authentication, Cloud Functions v2) |
+| AI | Gemini API（Cloud Functions 経由） |
+| ホスティング | Vercel |
 | ローカル開発DB | Firebase Emulator Suite（課金不要） |
 
-- React 19 / Turbopack。
-- パッケージ: `firebase`, `firebase-admin`, `@anthropic-ai/sdk`。
+- パッケージ: `firebase`, `firebase-admin`, `@google/genai`。
+- AI の呼び出しは Cloud Functions に閉じ、API キーをクライアントへ露出させない。
+
+> **注:** 当初は Next.js 16 (App Router) + Anthropic API で実装していたが、
+> モバイル向け SPA に構成を寄せる過程で Vite + Cloud Functions + Gemini API へ移行した。
+> 旧実装は git 履歴（`snapshot: legacy Next.js implementation` コミット）に残っている。
+> 以降の記述および「14. 実装ステータス」には旧構成を前提とした箇所が残っている。
 
 ---
 

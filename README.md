@@ -3,6 +3,8 @@
 「理想の自分にAIと毎日対話しながら近づいていく」目標管理アプリ。
 夢はあるのに今日何をすべきか分からない学生向けに、理想像と今日の行動を繋げる。フォーム入力ゼロ、AIとの会話だけで完結する。
 
+**デモ: https://goal-app-rewave.vercel.app**
+
 ## 思想的基盤：意志力に頼らない仕組み化
 
 1. **迷いの排除** — 前日の夜に「明日の最初の1タスク」を決めるので、朝は考えずに始まる
@@ -17,8 +19,8 @@
 - **フロントエンド**: React 19 (Vite) + TypeScript + Tailwind CSS v4。モバイルファーストSPA
 - **バックエンド**: Firebase — Authentication（匿名認証）/ Firestore / Cloud Functions v2
 - **AI**: Gemini API（Cloud Functions 経由。クライアントから直接叩かない）
-  - 対話生成: `gemini-2.5-flash`（オンボーディング・朝・夜・週次）— SSE ストリーミング
-  - 軽量タスク: `gemini-2.5-flash-lite`（理想像/タスク抽出・スコア算出）— 構造化出力（JSON Schema）
+  - 対話生成: `gemini-3.5-flash`（オンボーディング・朝・夜・週次）— SSE ストリーミング
+  - 軽量タスク: `gemini-3.1-flash-lite`（理想像/タスク抽出・スコア算出）— 構造化出力（JSON Schema）
 
 ## セットアップ
 
@@ -55,7 +57,7 @@ src/
 functions/src/
   index.ts    chat（onRequest, SSE）+ assist（onCall, 構造化出力）
   prompts.ts  モード別システムプロンプト（ラベリング型 / 将来の自分型）
-  anthropic.ts モデル定義とクライアント
+  gemini.ts   モデル定義とクライアント
 ```
 
 ### Firestore データモデル
